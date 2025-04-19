@@ -1,4 +1,4 @@
-QT += quick
+QT += quick multimedia core
 
 SOURCES += \
         main.cpp
