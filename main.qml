@@ -8,15 +8,13 @@ Window {
     height: 450
     visible: true
     title: qsTr("Hello World")
+
     Rectangle {
-        id:main
+        id : main
         visible: true
         anchors.fill: parent
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
-        anchors.topMargin: 0
-        anchors.bottomMargin: 0
         color: "#000000"
+
         Rectangle {
             id :  fullscreen
             x: 31
@@ -44,6 +42,7 @@ Window {
             }
 
         }
+
         Rectangle {
             id : select_area
             x: 183
@@ -71,6 +70,7 @@ Window {
             }
             radius: 20
         }
+
         Loader {
             id: selectAreaLoader
             active: false
@@ -82,6 +82,7 @@ Window {
                 }
             }
         }
+
         property string savePath: ""
 
         Rectangle {
@@ -96,9 +97,12 @@ Window {
             TextInput {
                 id: textInput
                 anchors.centerIn: parent
-                text: qsTr("video.mp4")
+                text: qsTr("C:/Users/LENOVO/Videos/out.mp4")
                 color: "#ffffff"
                 width: parent.width - 20
+            }
+            Component.onCompleted: {
+                backend.set_customlocation(textInput.text)
             }
         }
 
@@ -120,18 +124,18 @@ Window {
                 anchors.fill: parent
                 onClicked: saveDialog.open()
             }
-        }
 
-        FileDialog
-        {
-            id: saveDialog
-            title: "Choose file to save"
-            fileMode: FileDialog.SaveFile
-            nameFilters: ["MP4 Files (*.mp4)"]
-            defaultSuffix: "mp4"
-            onAccepted: {
-                textInput.text = saveDialog.file.toString().replace("file:///", "")
-                console.log("Save file path: " + textInput.text)
+            FileDialog {
+                id: saveDialog
+                title: "Choose file to save"
+                fileMode: FileDialog.SaveFile
+                nameFilters: ["MP4 Files (*.mp4)"]
+                defaultSuffix: "mp4"
+                onAccepted: {
+                    textInput.text = saveDialog.file.toString().replace("file:///", "")
+                    console.log("Save file path: " + textInput.text)
+                    backend.set_customlocation(textInput.text)
+                }
             }
         }
         Rectangle {
@@ -169,6 +173,7 @@ Window {
                 }
             }
         }
+
         Rectangle {
             id: need_audio
             x: 31
@@ -204,6 +209,7 @@ Window {
                 }
             }
         }
+
         Rectangle {
             id: select_fps
             width:250
@@ -286,6 +292,7 @@ Window {
                 }
             }
         }
+
         Rectangle {
             id: slider
             x: 31
@@ -346,6 +353,7 @@ Window {
                 }
             }
         }
+
         Rectangle {
             id : start_recording
             x: 31
@@ -367,6 +375,7 @@ Window {
             }
             radius: 20
         }
+
         Rectangle {
             id : pause
             x: 143
@@ -388,6 +397,7 @@ Window {
             }
             radius: 20
         }
+
         Rectangle {
             id : resume
             x: 253
@@ -409,6 +419,7 @@ Window {
             }
             radius: 20
         }
+
         Rectangle {
             id : stop
             x: 268
@@ -430,6 +441,7 @@ Window {
             }
             radius: 20
         }
+
         Rectangle {
             id: audio_devices
             x: 123
@@ -508,5 +520,6 @@ Window {
                 listView.model = backend.getAudioDevices()
             }
         }
+
     }
 }

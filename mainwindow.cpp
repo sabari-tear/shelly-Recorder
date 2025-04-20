@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include <QDebug>
+
 MainWindow::MainWindow(QObject* parent) : QObject(parent) {}
 
 void MainWindow::set_fullscreen() {
@@ -24,6 +25,7 @@ void MainWindow::set_customarea(int width, int height, int x_offset, int y_offse
 void MainWindow::set_customlocation(QString Outputpath)
 {
     output=Outputpath.toStdString();
+    qDebug()<<Outputpath<<" is got to the backend";
 }
 QVariantList MainWindow::getAudioDevices() {
     QVariantList devices;
