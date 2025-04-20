@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="main.qml">main.qml</file>
+        <file alias="selectarea.qml">selectarea.qml</file>
+    </qresource>
+</RCC>

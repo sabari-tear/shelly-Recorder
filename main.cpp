@@ -2,24 +2,8 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QObject>
-#include <QVariantList>
-#include <QVariantMap>
-#include <QMediaDevices>
-#include <QAudioDevice>
-#include <iostream>
-
-// Dummy device manager
-class AudioDeviceManager : public QObject {
-    Q_OBJECT
-public:
-    Q_INVOKABLE QVariantList getAudioDevices() {
-        QVariantList devices;
-        const auto deviceInfos = QMediaDevices::audioInputs();
-        for (const QAudioDevice &deviceInfo:deviceInfos)
-            devices<<deviceInfo.description();
-        return devices;
-    }
-};
+#include <QQmlComponent>
+#include "mainwindow.h"
 
 
 int main(int argc, char *argv[])
@@ -27,11 +11,13 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
-    AudioDeviceManager audioManager;
-    engine.rootContext()->setContextProperty("audioManager", &audioManager);
-    qmlRegisterType<AudioDeviceManager>("audioManager", 1, 0, "AudioDeviceManager");
+    
+    // Create and expose MainWindow
+    MainWindow mw;
+    engine.rootContext()->setContextProperty("backend", &mw);
+    //qmlRegisterType<MainWindow>("backend", 1, 0, "MainWindow");
 
-    const QUrl url(QStringLiteral("qrc:/Shall_be_recorded/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreated,
@@ -45,4 +31,3 @@ int main(int argc, char *argv[])
 
     return app.exec();
 }
-#include "main.moc"

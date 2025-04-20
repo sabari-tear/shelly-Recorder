@@ -1,4 +1,7 @@
 import QtQuick
+import QtQuick.Controls
+import QtQuick.Controls.Material
+import Qt.labs.platform
 
 Window {
     width: 450
@@ -31,9 +34,15 @@ Window {
             MouseArea {
                 id: mouseArea_fullscreen
                 anchors.fill: parent
-                //onClicked:
+                onClicked: {
+                    backend.set_fullscreen()
+                }
             }
             radius: 20
+            Component.onCompleted: {
+                console.log("QML Loaded")
+            }
+
         }
         Rectangle {
             id : select_area
@@ -52,38 +61,77 @@ Window {
             MouseArea {
                 id: mouseArea_select_area
                 anchors.fill: parent
-                //onClicked:
+                onClicked: {
+                    console.log("Select Area button clicked")
+                    selectAreaLoader.active = true
+                    console.log("Loader active state:", selectAreaLoader.active)
+                    console.log("Loader status:", selectAreaLoader.status)
+                    console.log("Loader source:", selectAreaLoader.source)
+                }
             }
             radius: 20
         }
+        Loader {
+            id: selectAreaLoader
+            active: false
+            source: "qrc:/selectarea.qml"
+            onStatusChanged: {
+                console.log("Loader status changed to:", status)
+                if (status === Loader.Error) {
+                    console.log("Loader error:", selectAreaLoader.sourceComponent.errorString())
+                }
+            }
+        }
+        property string savePath: ""
+
         Rectangle {
             id: path
             x: 31
             y: 92
-            width:200
-            height:30
-            color:"#2a2a2a"
+            width: 200
+            height: 30
+            color: "#2a2a2a"
+            radius: 20
+
             TextInput {
                 id: textInput
                 anchors.centerIn: parent
-                text: qsTr("Text Input.....")
-                color:"#FFFFFF"
-
+                text: qsTr("video.mp4")
+                color: "#ffffff"
+                width: parent.width - 20
             }
-            radius: 20
         }
+
         Rectangle {
             id: browse_path
             x: 253
             y: 92
-            width :30
+            width: 30
             height: 30
             color: "#2a2a2a"
+
             Text {
-                id: text_dots
                 anchors.centerIn: parent
                 text: "..."
-                color: "#FFFFFF"
+                color: "#ffffff"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: saveDialog.open()
+            }
+        }
+
+        FileDialog
+        {
+            id: saveDialog
+            title: "Choose file to save"
+            fileMode: FileDialog.SaveFile
+            nameFilters: ["MP4 Files (*.mp4)"]
+            defaultSuffix: "mp4"
+            onAccepted: {
+                textInput.text = saveDialog.file.toString().replace("file:///", "")
+                console.log("Save file path: " + textInput.text)
             }
         }
         Rectangle {
@@ -315,7 +363,7 @@ Window {
             MouseArea {
                 id: mouseArea_start_recording
                 anchors.fill: parent
-                //onClicked:
+                onClicked: backend.start_record()
             }
             radius: 20
         }
@@ -412,7 +460,7 @@ Window {
                     onClicked: listView.visible = !listView.visible
                 }
             }
-            property var audioDevices: audioManager.getAudioDevices()
+            property var audioDevices: backend.getAudioDevices()
             ListView {
                 id: listView
                 width: 160
@@ -457,7 +505,7 @@ Window {
                 }
             }
             Component.onCompleted: {
-                listView.model = audioManager.getAudioDevices()
+                listView.model = backend.getAudioDevices()
             }
         }
     }
