@@ -5,9 +5,15 @@
 
 
 extern "C" {
-#include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
-#include "libavutil/avutil.h"
+#include "libavdevice/avdevice.h"
+#include "libavformat/avformat.h"
+#include "libavformat/avio.h"
+#include "libavutil/audio_fifo.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+#include "libswresample/swresample.h"
+#include "libswscale/swscale.h"
 }
 
 
@@ -36,7 +42,7 @@ enum class RecordingStatus {
 class Screenrecorder
 {
 public:
-    Screenrecorder(RecordingWindowDetails* window_details, VideoDetails* video_Details, string* outFilePath, string* audioDevice);
+    Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice);
     ~Screenrecorder();
     void start_record();
     void stop_record();
@@ -44,17 +50,21 @@ public:
     void resume_record();
 
     //fuctions
-    void readydevices_encodec();
-
+    void init_devicesEncodec();
     //variables
     AVFormatContext* avFmtCtx;
     AVFormatContext* avFmtCtxOut;
     AVOutputFormat* fmt;
-    AVCodec *avEncodec;
+    AVCodec* avEncodec;
 
+    void init_videoSource();
+    AVDictionary* avRawOptions;
+    int vdo_stream_index;
+    AVCodecContext* avRawCodecCtx;
+    AVCodec* avDecodec;
     // constructors
-    RecordingWindowDetails window_details;
-    VideoDetails video_Details;
+    RecordingWindowDetails wd;
+    VideoDetails vd;
     string outFilePath;
     string audioDevice;
 };

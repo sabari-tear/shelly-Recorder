@@ -85,6 +85,7 @@ void MainWindow::get_quality(int quality)
     qDebug()<<quality<<" is set";
 }
 void MainWindow::start_record() {
-    recorder=new Screenrecorder(&curr, &curr_details, &output, &audiodevice_name);
+    recorder=new Screenrecorder(curr, curr_details, output, audiodevice_name);
+
 }
 

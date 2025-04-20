@@ -360,8 +360,8 @@ Window {
 
                         onPositionChanged: {
                             slider.currentValue = Math.round((slide_clip.x / (slider_cmp.width - slide_clip.width)) * (slider.maxValue - slider.minValue) + slider.minValue);
-                            backend.get_quality(slider.currentValue);
                         }
+                        onReleased: backend.get_quality(slider.currentValue);
                     }
                 }
             }
