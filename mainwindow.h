@@ -27,11 +27,19 @@ public:
 
 
     Q_INVOKABLE QVariantList getAudioDevices();
-    void set_audioDeviceName(QString OutputPath);
+    //Q_INVOKABLE void set_audioDevice();
+
+    Q_INVOKABLE void set_audio(int state);
+    Q_INVOKABLE void set_audioDeviceName(QString device);
+
+    Q_INVOKABLE void get_fps(int fps);
+    Q_INVOKABLE void get_quality(int quality);
+
     //details
     RecordingWindowDetails curr;
     VideoDetails curr_details;
     string output;
+    bool audio;
     string audiodevice_name;
     Screenrecorder* recorder;
 };

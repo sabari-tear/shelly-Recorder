@@ -34,13 +34,14 @@ Window {
                 anchors.fill: parent
                 onClicked: {
                     backend.set_fullscreen()
+                    selectAreaLoader.active=false
                 }
             }
             radius: 20
             Component.onCompleted: {
                 console.log("QML Loaded")
+                backend.set_fullscreen()
             }
-
         }
 
         Rectangle {
@@ -138,6 +139,7 @@ Window {
                 }
             }
         }
+
         Rectangle {
             id: system_tray
             x: 31
@@ -200,10 +202,12 @@ Window {
                 onClicked: {
                     if (no_audio.visible) {
                         yes_audio.visible=true;
+                        backend.set_audio(1);
                         no_audio.visible=false;
                     }
                     else {
                         no_audio.visible=true;
+                        backend.set_audio(0);
                         yes_audio.visible=false;
                     }
                 }
@@ -232,10 +236,11 @@ Window {
                         color: "#FFFFFF"
                         visible: true
                     }
+                    Component.onCompleted: backend.get_fps(24)
                 }
 
                 Rectangle {
-                    id : select_
+                    id : select_24
                     width: 30
                     height: 30
                     color: "#3a3a3a"
@@ -246,9 +251,12 @@ Window {
                     }
 
                     MouseArea {
-                        id: mouseArea_select_
+                        id: mouseArea_select_24
                         anchors.fill: parent
-                        onClicked: select_fps.curr="24"
+                        onClicked: {
+                            backend.get_fps(24);
+                            select_fps.curr="24";
+                        }
                     }
                     radius: 2
                 }
@@ -266,7 +274,10 @@ Window {
                     MouseArea {
                         id: mouseArea_select_30
                         anchors.fill: parent
-                        onClicked: select_fps.curr="30"
+                        onClicked: {
+                            backend.get_fps(30);
+                            select_fps.curr="30";
+                        }
                     }
                     radius: 2
                 }
@@ -284,10 +295,11 @@ Window {
                     MouseArea {
                         id: mouseArea_select_60
                         anchors.fill: parent
-                        onClicked: select_fps.curr="60"
+                        onClicked: {
+                            backend.get_fps(60);
+                            select_fps.curr="60";
+                        }
                     }
-
-
                     radius: 6
                 }
             }
@@ -347,11 +359,13 @@ Window {
                         drag.maximumX: slider_cmp.width - slide_clip.width
 
                         onPositionChanged: {
-                            slider.currentValue = Math.round((slide_clip.x / (slider_cmp.width - slide_clip.width)) * (slider.maxValue - slider.minValue) + slider.minValue)
+                            slider.currentValue = Math.round((slide_clip.x / (slider_cmp.width - slide_clip.width)) * (slider.maxValue - slider.minValue) + slider.minValue);
+                            backend.get_quality(slider.currentValue);
                         }
                     }
                 }
             }
+            Component.onCompleted: backend.get_quality(slider.currentValue);
         }
 
         Rectangle {
@@ -510,8 +524,9 @@ Window {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            selectedText.text = modelData
-                            listView.visible = false
+                            selectedText.text = modelData;
+                            backend.set_audioDeviceName(modelData);
+                            listView.visible = false;
                         }
                     }
                 }
