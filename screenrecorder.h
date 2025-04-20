@@ -43,13 +43,18 @@ class Screenrecorder
 {
 public:
     Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice);
+    RecordingWindowDetails wd;
+    VideoDetails vd;
+    string outFilePath;
+    string audioDevice;
+
     ~Screenrecorder();
     void start_record();
     void stop_record();
     void pause_record();
     void resume_record();
 
-    //fuctions
+    //fuction
     void init_devicesEncodec();
     //variables
     AVFormatContext* avFmtCtx;
@@ -57,16 +62,19 @@ public:
     AVOutputFormat* fmt;
     AVCodec* avEncodec;
 
+    //
     void init_videoSource();
+    //
     AVDictionary* avRawOptions;
     int vdo_stream_index;
     AVCodecContext* avRawCodecCtx;
     AVCodec* avDecodec;
-    // constructors
-    RecordingWindowDetails wd;
-    VideoDetails vd;
-    string outFilePath;
-    string audioDevice;
+
+    //
+    void init_videoVariables();
+    //
+    AVStream* video_st;
+    AVCodecContext* avEncoderCtx;
 };
 
 #endif // SCREENRECORDER_H

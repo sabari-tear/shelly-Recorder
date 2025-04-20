@@ -2,31 +2,30 @@
 #include <QDebug>
 void Screenrecorder::init_devicesEncodec()
 {
-    qDebug()<<"ready is called";
     //to get all the input devices and register it to the internal list in FFmpeg
     avdevice_register_all();
 
     //format context pointer
     avFmtCtx=NULL;
-    //vFmtCtx=avformat_alloc_context();
+    avFmtCtx=avformat_alloc_context();
 
-    // //guess the format
+    // guess the format
     fmt=av_guess_format(NULL,outFilePath.c_str(),NULL);
     if (fmt==NULL) {
         throw runtime_error{"Error: cannot guess format"};
     }
-    // //this context is used to write the output
+    // this context is used to write the output
     avformat_alloc_output_context2(&avFmtCtxOut, fmt, fmt->name, outFilePath.c_str());
 
-    // //find encoder
+    // find encoder
     avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
 
+    //throw error if encoder not found
     if (avEncodec==nullptr) {
         throw logic_error{"Encoder codec not found"};
     }
 
     qDebug()<<"done ready.";
-    //throw error if encoder not found
 }
 
 void Screenrecorder::init_videoSource(){
@@ -81,6 +80,9 @@ void Screenrecorder::init_videoSource(){
     qDebug()<<"videoSource is done";
 }
 
+void init_videoVariables() {
+    video_st = avformat_new_stream(avFmtCtxOut, avEncodec);
+}
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
 {
@@ -106,4 +108,5 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
 
     init_devicesEncodec();
     init_videoSource();
+    init_videoVariables();
 }
