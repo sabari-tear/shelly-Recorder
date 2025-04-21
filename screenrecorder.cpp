@@ -80,8 +80,36 @@ void Screenrecorder::init_videoSource(){
     qDebug()<<"videoSource is done";
 }
 
-void init_videoVariables() {
+void Screenrecorder::init_videoVariables() {
+    //setup the video streamer iwth output context and encoding details
     video_st = avformat_new_stream(avFmtCtxOut, avEncodec);
+    //initialize the encoder context
+    avEncoderCtx=avcodec_alloc_context3(NULL);
+    avEncoderCtx->codec_id=AV_CODEC_ID_H264;
+    avEncoderCtx->codec_type=AVMEDIA_TYPE_VIDEO;
+    avEncoderCtx->pix_fmt=AV_PIX_FMT_YUV420P;
+    avEncoderCtx->bit_rate = 4000;
+    avEncoderCtx->width = (int)(wd.width * vd.quality) / 32 * 32;
+    avEncoderCtx->height = (int)(wd.height * vd.quality) / 2 * 2;
+    avEncoderCtx->time_base.num = 1;
+    avEncoderCtx->time_base.den = vd.fps;
+    avEncoderCtx->gop_size = vd.fps * 2;
+    avEncoderCtx->qmin = vd.compression * 5;
+    avEncoderCtx->qmax = 5 + vd.compression * 5;
+    avEncoderCtx->max_b_frames = 10;
+
+    av_opt_set(avEncoderCtx, "preset", "ultrafast", 0);
+    av_opt_set(avEncoderCtx, "tune", "zerolatency", 0);
+    av_opt_set(avEncoderCtx, "cabac", "1", 0);
+    av_opt_set(avEncoderCtx, "ref", "3", 0);
+    av_opt_set(avEncoderCtx, "deblock", "1:0:0", 0);
+    av_opt_set(avEncoderCtx, "analyse", "0x3:0x113", 0);
+    av_opt_set(avEncoderCtx, "subme", "7", 0);
+    av_opt_set(avEncoderCtx, "chroma_qp_offset", "4", 0);
+    av_opt_set(avEncoderCtx, "rc", "crf", 0);
+    av_opt_set(avEncoderCtx, "rc_lookahead", "40", 0);
+    av_opt_set(avEncoderCtx, "crf", "10.0", 0);
+    av_opt_set(avEncoderCtx, "threads", "8", 0);
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
