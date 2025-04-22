@@ -35,6 +35,7 @@ void Screenrecorder::init_videoSource(){
     avRawOptions=nullptr;
     av_dict_set(&avRawOptions,"video_size",(to_string(wd.width)+"x"+to_string(wd.height)).c_str(),0);
     av_dict_set(&avRawOptions,"framerate",to_string(vd.fps).c_str(),0);
+    av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
     AVInputFormat *avInputfmt=av_find_input_format("gdigrab");
     if(avInputfmt==nullptr){
@@ -182,8 +183,46 @@ void Screenrecorder::init_videoVariables() {
 }
 
 void Screenrecorder::init_audioSource() {
-    int c=0;
-    qDebug()<<c;
+    //init
+    FormatContextAudio = avformat_alloc_context();
+    AudioOptions=NULL;
+
+    //setip dict
+    av_dict_set(&AudioOptions, "sample_rate","44100",0);
+    av_dict_set(&AudioOptions, "async","25",0);
+
+    //make the format
+    audioDevice="audio="+audioDevice;
+
+    //set input format
+    AudioInputFormat=av_find_input_format("dshow");
+    if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions)!=0) {
+        qDebug()<<"Unable to find input audio";
+        return;
+    }
+
+    //check stream info
+    if (avformat_find_stream_info(FormatContextAudio,NULL)<0) {
+        qDebug()<<"Unable to find stream information";
+        return;
+    }
+
+    //find audio stream index
+    for(int i=0;i<(int)FormatContextAudio->nb_streams;i++) {
+        if (FormatContextAudio->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
+            ado_stream_index=i;
+            audio_st =FormatContextAudio->streams[i];
+            break;
+        }
+    }
+
+    //couldnt find throw error
+    if (ado_stream_index==-1 || ado_stream_index>=(int)FormatContextAudio->nb_streams) {
+        qDebug()<<"Unable to find the audio stream..";
+        return;
+    }
+    qDebug()<<"init Audio Variables successfullll";
+
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)

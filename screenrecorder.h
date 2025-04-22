@@ -78,7 +78,14 @@ public:
     struct SwsContext* swsCtx;
     AVFrame* avYUVFrame;
 
+    //
     void init_audioSource();
+    //
+    AVFormatContext* FormatContextAudio;
+    AVDictionary* AudioOptions;
+    AVInputFormat* AudioInputFormat;
+    int ado_stream_index;
+    AVStream* audio_st;
 };
 
 #endif // SCREENRECORDER_H
