@@ -221,7 +221,35 @@ void Screenrecorder::init_audioSource() {
         qDebug()<<"Unable to find the audio stream..";
         return;
     }
-    qDebug()<<"init Audio Variables successfullll";
+    qDebug()<<"init Audio source successfullll";
+
+}
+
+void Screenrecorder::init_audioVariables() {
+    //decoder parameters
+    AVCodecParameters * AudioParams =audio_st->codecpar;
+    //find decoder codec
+    AudioDecodec=avcodec_find_decoder(AudioParams->codec_id);
+    if (AudioDecodec==NULL) {
+        qDebug()<<"Couldnt find a decoder";
+        return;
+    }
+
+    //alloc audio decoder ctx
+    AudioDecoderCtx=avcodec_alloc_context3(AudioDecodec);
+    if (avcodec_parameters_to_context(AudioDecoderCtx,AudioParams)<0) {
+        qDebug()<<"Unable to set audio parameters ctx to decoder ctx";
+        return;
+    }
+
+    //open the codec
+    if (avcodec_open2(AudioDecoderCtx,AudioDecodec,nullptr)<0) {
+        qDebug()<<"cant open the decoder...";
+        return;
+    }
+
+    // new audio stream output
+    qDebug()<<"checkpoint 1 reached successfully";
 
 }
 
@@ -253,5 +281,6 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
 
     if (vd.audio) {
         init_audioSource();
+        init_audioVariables();
     }
 }

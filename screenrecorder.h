@@ -86,6 +86,14 @@ public:
     AVInputFormat* AudioInputFormat;
     int ado_stream_index;
     AVStream* audio_st;
+
+    //
+    void init_audioVariables();
+    //
+    AVCodec* AudioDecodec;
+    AVCodec* AudioEncodec;
+    AVCodecContext* AudioEncoderCtx;
+    AVCodecContext* AudioDecoderCtx;
 };
 
 #endif // SCREENRECORDER_H
