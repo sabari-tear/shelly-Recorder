@@ -67,16 +67,16 @@ public:
     //
     AVDictionary* avRawOptions;
     int vdo_stream_index;
+    AVStream* vdo_input_st;
     AVCodecContext* avRawCodecCtx;
     AVCodec* avDecodec;
-
     //
     void init_videoVariables();
     //
-    AVStream* video_st;
     AVCodecContext* avEncoderCtx;
     struct SwsContext* swsCtx;
     AVFrame* avYUVFrame;
+    int videoIndexOut;
 
     //
     void init_audioSource();
@@ -85,7 +85,7 @@ public:
     AVDictionary* AudioOptions;
     AVInputFormat* AudioInputFormat;
     int ado_stream_index;
-    AVStream* audio_st;
+    AVStream* ado_input_st;
 
     //
     void init_audioVariables();
@@ -94,6 +94,13 @@ public:
     AVCodec* AudioEncodec;
     AVCodecContext* AudioEncoderCtx;
     AVCodecContext* AudioDecoderCtx;
+    AVStream* audio_output_st;
+    int audioIndexOut;
+
+    //
+    void init_outputFile();
+    //
+
 };
 
 #endif // SCREENRECORDER_H

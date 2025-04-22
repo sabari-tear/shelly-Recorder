@@ -57,9 +57,11 @@ void Screenrecorder::init_videoSource(){
     }
 
     vdo_stream_index=-1;
+    vdo_input_st=NULL;
     for(int i=0;i<(int)avFmtCtx->nb_streams;i++){
         if(avFmtCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO){
             vdo_stream_index=i;
+            vdo_input_st=avFmtCtx->streams[i];
             break;
         }
     }
@@ -83,9 +85,10 @@ void Screenrecorder::init_videoSource(){
 
 void Screenrecorder::init_videoVariables() {
     //setup the video streamer iwth output context and encoding details
-    video_st = avformat_new_stream(avFmtCtxOut, avEncodec);
+    AVStream* video_output_st = avformat_new_stream(avFmtCtxOut, avEncodec);
     //initialize the encoder context
     avEncoderCtx=avcodec_alloc_context3(NULL);
+    avcodec_parameters_to_context(avEncoderCtx,video_output_st->codecpar);
     avEncoderCtx->codec_id=AV_CODEC_ID_H264;
     avEncoderCtx->codec_type=AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt=AV_PIX_FMT_YUV420P;
@@ -129,18 +132,19 @@ void Screenrecorder::init_videoVariables() {
     }
 
     //find the empty stream to use for encoder
-    int outvdost=-1;
+    videoIndexOut=-1;
     for(int i=0;i<(int)avFmtCtx->nb_streams;i++) {
-        if (avFmtCtxOut->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_UNKNOWN)
-            outvdost=i;
+        if (avFmtCtxOut->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_UNKNOWN) {
+            videoIndexOut=i;
+        }
     }
-    if (outvdost<0) {
-        qDebug()<<"Cannot find empty stream for enoder";
+    if (videoIndexOut<0) {
+        qDebug()<<"Cannot find empty stream for encoder";
         return;
     }
 
     //setting the encoder context to the empty stream
-    avcodec_parameters_from_context(avFmtCtx->streams[outvdost]->codecpar,avEncoderCtx);
+    avcodec_parameters_from_context(avFmtCtx->streams[videoIndexOut]->codecpar,avEncoderCtx);
 
     //open output url
     if (avio_open(&avFmtCtx->pb, outFilePath.c_str(),AVIO_FLAG_READ_WRITE)<0) {
@@ -211,7 +215,7 @@ void Screenrecorder::init_audioSource() {
     for(int i=0;i<(int)FormatContextAudio->nb_streams;i++) {
         if (FormatContextAudio->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
             ado_stream_index=i;
-            audio_st =FormatContextAudio->streams[i];
+            audio_output_st =FormatContextAudio->streams[i];
             break;
         }
     }
@@ -227,7 +231,7 @@ void Screenrecorder::init_audioSource() {
 
 void Screenrecorder::init_audioVariables() {
     //decoder parameters
-    AVCodecParameters * AudioParams =audio_st->codecpar;
+    AVCodecParameters * AudioParams =audio_output_st->codecpar;
     //find decoder codec
     AudioDecodec=avcodec_find_decoder(AudioParams->codec_id);
     if (AudioDecodec==NULL) {
@@ -250,7 +254,66 @@ void Screenrecorder::init_audioVariables() {
 
     // new audio stream output
     qDebug()<<"checkpoint 1 reached successfully";
+    AVStream* ado_out_st=avformat_new_stream(avFmtCtxOut,nullptr);
+    if (!ado_out_st) {
+        qDebug()<<"it does not detect any stream for output";
+        return;
+    }
 
+    //find the encodec output
+    AudioEncodec=avcodec_find_encoder(AV_CODEC_ID_AAC);
+    if (!AudioEncodec) {
+        qDebug()<<"can not find encoder";
+        return;
+    }
+    //setting up the context for the encoder
+    AudioEncoderCtx=avcodec_alloc_context3(AudioEncodec);
+    if (!AudioEncoderCtx) {
+        qDebug()<<"Can not perform alloc for EncoderCtx";
+        return;
+    }
+
+    if (AudioEncodec->supported_samplerates) {
+        AudioEncoderCtx->sample_rate=AudioEncodec->supported_samplerates[0];
+        for(int i=0;(AudioEncodec)->supported_samplerates[i];i++) {
+            if (AudioEncodec->supported_samplerates[i]==AudioDecoderCtx->sample_rate)
+                AudioEncoderCtx->sample_rate=AudioDecoderCtx->sample_rate;
+        }
+    }
+
+    //init encoder ctx
+    AudioEncoderCtx->codec_id=AV_CODEC_ID_AAC;
+    AudioEncoderCtx->bit_rate=128000;
+    AudioEncoderCtx->channels=AudioDecoderCtx->channels;
+    AudioEncoderCtx->channel_layout=av_get_default_channel_layout(AudioEncoderCtx->channels);
+    AudioEncoderCtx->sample_fmt=AudioEncodec->sample_fmts? AudioEncodec->sample_fmts[0]:AV_SAMPLE_FMT_FLTP;
+
+    AudioEncoderCtx->time_base= {1,AudioDecoderCtx->sample_rate};
+    AudioEncoderCtx->strict_std_compliance=FF_COMPLIANCE_EXPERIMENTAL;
+
+    if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER)
+        AudioEncoderCtx->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    if (avcodec_open2(AudioEncoderCtx,AudioEncodec,NULL)<0) {
+        qDebug()<<"Error on opening encoder";
+    }
+
+    audioIndexOut=-1;
+    for(int i=0;i<(int)avFmtCtxOut->nb_streams;i++) {
+        if (avFmtCtxOut->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_UNKNOWN){
+            audioIndexOut=i;
+        }
+    }
+    if (audioIndexOut<0) {
+        qDebug()<<"cannot find empty stream for audio";
+        return;
+    }
+    avcodec_parameters_from_context(avFmtCtxOut->streams[audioIndexOut]->codecpar,AudioEncoderCtx);
+    qDebug()<<"init of audio variables was success";
+}
+
+void Screenrecorder::init_outputFile() {
+    qDebug()<<"initializing the output file...";
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
@@ -283,4 +346,6 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
         init_audioSource();
         init_audioVariables();
     }
+
+    init_outputFile();
 }
