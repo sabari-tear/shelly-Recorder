@@ -110,6 +110,80 @@ void Screenrecorder::init_videoVariables() {
     av_opt_set(avEncoderCtx, "rc_lookahead", "40", 0);
     av_opt_set(avEncoderCtx, "crf", "10.0", 0);
     av_opt_set(avEncoderCtx, "threads", "8", 0);
+
+    //set the encoder header to global if it didnt set then every raw packets it will carry the header
+    if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER)
+        avEncoderCtx->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    //open the decoder
+    if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
+        qDebug()<<"Could not open decodec. ";
+        return;
+    }
+
+    //open the encoder
+    if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
+        qDebug()<<"Could not open Encodec. ";
+        return;
+    }
+
+    //find the empty stream to use for encoder
+    int outvdost=-1;
+    for(int i=0;i<(int)avFmtCtx->nb_streams;i++) {
+        if (avFmtCtxOut->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_UNKNOWN)
+            outvdost=i;
+    }
+    if (outvdost<0) {
+        qDebug()<<"Cannot find empty stream for enoder";
+        return;
+    }
+
+    //setting the encoder context to the empty stream
+    avcodec_parameters_from_context(avFmtCtx->streams[outvdost]->codecpar,avEncoderCtx);
+
+    //open output url
+    if (avio_open(&avFmtCtx->pb, outFilePath.c_str(),AVIO_FLAG_READ_WRITE)<0) {
+        qDebug()<<"Can't open the path with read and write";
+        return;
+    }
+
+    //get the context for setting it up to convert raw frames to the format your encoder
+    swsCtx=sws_getContext(avRawCodecCtx->width,
+                            avRawCodecCtx->height,
+                            avRawCodecCtx->pix_fmt,
+                            (int)(avRawCodecCtx->width*vd.quality)/32*32,
+                            (int)(avRawCodecCtx->height*vd.quality)/2*2,
+                            AV_PIX_FMT_YUV420P,
+                            SWS_FAST_BILINEAR,
+                            nullptr,
+                            nullptr,
+                            nullptr);
+
+    //init to store the converted frame
+    avYUVFrame=av_frame_alloc();
+    int yuvLen=av_image_get_buffer_size(AV_PIX_FMT_YUV420P,
+                                          avRawCodecCtx->width,
+                                          avRawCodecCtx->height,1);
+
+    //init var to save one frame of yuv420p frame
+    uint8_t *yuvBuf =new uint8_t[yuvLen];
+    av_image_fill_arrays(avYUVFrame->data,
+                         avYUVFrame->linesize,
+                         (uint8_t*)yuvBuf,
+                         AV_PIX_FMT_YUV420P,
+                         avRawCodecCtx->width,
+                         avRawCodecCtx->height,1);
+
+    avYUVFrame->width = avRawCodecCtx->width;
+    avYUVFrame->height = avRawCodecCtx->height;
+    avYUVFrame->format = AV_PIX_FMT_YUV420P;
+
+    qDebug()<<"initvideovariables succeeded";
+}
+
+void Screenrecorder::init_audioSource() {
+    int c=0;
+    qDebug()<<c;
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
@@ -137,4 +211,8 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
     init_devicesEncodec();
     init_videoSource();
     init_videoVariables();
+
+    if (vd.audio) {
+        init_audioSource();
+    }
 }

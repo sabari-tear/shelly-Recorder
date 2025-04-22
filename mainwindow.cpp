@@ -44,7 +44,7 @@ void MainWindow::set_audioDeviceName(QString device)
 void MainWindow::set_audio(int state)
 {
     curr_details.audio=state;
-    qDebug()<<"state is set as"<<state;
+    qDebug()<<"state is+ set as"<<state;
 }
 
 void MainWindow::get_fps(int fps)

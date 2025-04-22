@@ -75,6 +75,10 @@ public:
     //
     AVStream* video_st;
     AVCodecContext* avEncoderCtx;
+    struct SwsContext* swsCtx;
+    AVFrame* avYUVFrame;
+
+    void init_audioSource();
 };
 
 #endif // SCREENRECORDER_H
