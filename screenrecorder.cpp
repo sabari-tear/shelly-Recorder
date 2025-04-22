@@ -313,7 +313,27 @@ void Screenrecorder::init_audioVariables() {
 }
 
 void Screenrecorder::init_outputFile() {
-    qDebug()<<"initializing the output file...";
+
+    //create an empty file it not exists
+    if (!(avFmtCtxOut->flags & AVFMT_NOFILE)) {
+        if (avio_open2(&avFmtCtxOut->pb, outFilePath.c_str(),AVIO_FLAG_WRITE,NULL,NULL)<0) {
+            qDebug()<<"Error creating new file";
+            return;
+        }
+    }
+
+    //find encoder stream
+    if (avFmtCtxOut->nb_streams==0) {
+        qDebug()<<"no stream is init...";
+        return;
+    }
+
+    if (avformat_write_header(avFmtCtxOut,NULL)<0) {
+        qDebug()<<"error in writing the header context...";
+        return;
+    }
+
+    qDebug()<<"initializing the output file... is done";
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
@@ -346,6 +366,5 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
         init_audioSource();
         init_audioVariables();
     }
-
     init_outputFile();
 }
