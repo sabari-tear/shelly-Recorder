@@ -350,8 +350,56 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
     }
 }
 
+function<void(void)> Screenrecorder::make_error_handler(function<void(void)> f) {
+    return [&]() {
+        try {
+            f();
+            lock_guard<mutex> lg{error_queue_m};
+            terminated_threads++;
+            error_queue_cv.notify_one();
+        }
+        catch (const std::exception &e) {
+            lock_guard<mutex> lg{error_queue_m};
+            error_queue.emplace(e.what());
+            error_queue_cv.notify_one();
+        }
+    };
+}
+
+void Screenrecorder::decodeAndEncode() {
+    int got_picture=0;
+    int flag=0;
+    int bufLen=0;
+    uint8_t *outBuf=nullptr;
+
+    bufLen=wd.width*wd.height*3;
+    outBuf=(uint8_t*)malloc(bufLen);
+
+    AVFrame* avOutFrame;
+    avOutFrame=av_frame_alloc();
+    av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t*)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, evEncoderCtx->height, 1);
+
+    AVPacket pkt;
+    av_init_packet(&pkt);
+
+    AVPacket* avRawPkt;
+    int i=1;
+    int j=1;
+
+    while(true) {
+        unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
+    }
+
+}
+
 void Screenrecorder::record()
 {
     audio_stop=false;
+    gotFirstValidVideoPacket=false;
 
+    eloborate_thread = make_unique<thread> ([this]() {
+        this->make_error_handler([this]() {
+            this->decodeAndEncode();
+        })
+    })
 }

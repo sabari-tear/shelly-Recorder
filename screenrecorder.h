@@ -2,7 +2,11 @@
 #define SCREENRECORDER_H
 
 #include <string>
-
+#include <thread>
+#include <functional>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
 
 extern "C" {
 #include "libavcodec/avcodec.h"
@@ -104,7 +108,19 @@ public:
     void record();
     //
     bool audio_stop;
+    bool gotFirstValidVideoPacket;
+    unique_ptr<thread> eloborate_thread;
 
+    //
+    function<void(void)> make_error_handler(function<void(void)> f);
+    //
+    mutex error_queue_m;
+    int terminated_threads=0;
+    condition_variable error_queue_cv;
+    queue <string> error_queue;
+
+    void decodeAndEncode();
+    mutex avRawPkt_queue_mutex;
 };
 
 #endif // SCREENRECORDER_H
