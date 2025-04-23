@@ -86,6 +86,6 @@ void MainWindow::get_quality(int quality)
 }
 void MainWindow::start_record() {
     recorder=new Screenrecorder(curr, curr_details, output, audiodevice_name);
-
+    recorder->record();
 }
 

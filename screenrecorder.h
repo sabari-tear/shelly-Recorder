@@ -76,7 +76,6 @@ public:
     AVCodecContext* avEncoderCtx;
     struct SwsContext* swsCtx;
     AVFrame* avYUVFrame;
-    int videoIndexOut;
 
     //
     void init_audioSource();
@@ -100,6 +99,11 @@ public:
     //
     void init_outputFile();
     //
+
+    //
+    void record();
+    //
+    bool audio_stop;
 
 };
 

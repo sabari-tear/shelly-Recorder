@@ -6,7 +6,7 @@ void Screenrecorder::init_devicesEncodec()
     avdevice_register_all();
 
     //format context pointer
-    avFmtCtx=NULL;
+    avFmtCtx=nullptr;
     avFmtCtx=avformat_alloc_context();
 
     // guess the format
@@ -21,11 +21,10 @@ void Screenrecorder::init_devicesEncodec()
     avEncodec = avcodec_find_encoder(AV_CODEC_ID_H264);
 
     //throw error if encoder not found
-    if (avEncodec==nullptr) {
+    if (!avEncodec) {
         throw logic_error{"Encoder codec not found"};
     }
 
-    qDebug()<<"done ready.";
 }
 
 void Screenrecorder::init_videoSource(){
@@ -33,27 +32,27 @@ void Screenrecorder::init_videoSource(){
     wd.height=wd.height/2*2;
 
     avRawOptions=nullptr;
+    if (vd.fps > 15) {
+        vd.fps = 15;
+    }
     av_dict_set(&avRawOptions,"video_size",(to_string(wd.width)+"x"+to_string(wd.height)).c_str(),0);
     av_dict_set(&avRawOptions,"framerate",to_string(vd.fps).c_str(),0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
 
     AVInputFormat *avInputfmt=av_find_input_format("gdigrab");
     if(avInputfmt==nullptr){
-        qDebug()<<"av_find_input_format not found......";
-        return;
+        throw logic_error{"av_find_input_format not found......"};
     }
 
     av_dict_set(&avRawOptions,"offset_x",to_string(wd.offset_x).c_str(),0);
     av_dict_set(&avRawOptions,"offset_y",to_string(wd.offset_y).c_str(),0);
 
     if(avformat_open_input(&avFmtCtx,"desktop",avInputfmt,&avRawOptions)!=0){
-        qDebug()<<"Failed to open video device: avformat_open_input()";
-        return;
+        throw logic_error{"Failed to open video device: avformat_open_input()"};
     }
 
     if(avformat_find_stream_info(avFmtCtx,&avRawOptions)<0){
-        qDebug()<<"Failed to get stream information: avformat_find_stream_info";
-        return;
+        throw logic_error{"Failed to get stream information: avformat_find_stream_info"};
     }
 
     vdo_stream_index=-1;
@@ -61,14 +60,12 @@ void Screenrecorder::init_videoSource(){
     for(int i=0;i<(int)avFmtCtx->nb_streams;i++){
         if(avFmtCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO){
             vdo_stream_index=i;
-            vdo_input_st=avFmtCtx->streams[i];
             break;
         }
     }
 
     if(vdo_stream_index==-1||vdo_stream_index>=(int)avFmtCtx->nb_streams){
-        qDebug()<<"Couldn't find the video stream.";
-        return;
+        throw logic_error{"Couldn't find the video stream."};
     }
 
     avRawCodecCtx=avcodec_alloc_context3(nullptr);
@@ -76,11 +73,8 @@ void Screenrecorder::init_videoSource(){
 
     avDecodec=avcodec_find_decoder(avRawCodecCtx->codec_id);
     if(avDecodec==nullptr){
-        qDebug()<<"Decoder codec not found.";
-        return;
+        throw runtime_error{"Decoder codec not found."};
     }
-
-    qDebug()<<"videoSource is done";
 }
 
 void Screenrecorder::init_videoVariables() {
@@ -89,6 +83,7 @@ void Screenrecorder::init_videoVariables() {
     //initialize the encoder context
     avEncoderCtx=avcodec_alloc_context3(NULL);
     avcodec_parameters_to_context(avEncoderCtx,video_output_st->codecpar);
+
     avEncoderCtx->codec_id=AV_CODEC_ID_H264;
     avEncoderCtx->codec_type=AVMEDIA_TYPE_VIDEO;
     avEncoderCtx->pix_fmt=AV_PIX_FMT_YUV420P;
@@ -117,39 +112,35 @@ void Screenrecorder::init_videoVariables() {
 
     //set the encoder header to global if it didnt set then every raw packets it will carry the header
     if (avFmtCtxOut->oformat->flags & AVFMT_GLOBALHEADER)
-        avEncoderCtx->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+        avEncoderCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     //open the decoder
     if (avcodec_open2(avRawCodecCtx, avDecodec, nullptr) < 0) {
-        qDebug()<<"Could not open decodec. ";
-        return;
+        throw runtime_error{"Could not open decodec. "};
     }
 
     //open the encoder
     if (avcodec_open2(avEncoderCtx, avEncodec, NULL) < 0) {
-        qDebug()<<"Could not open Encodec. ";
-        return;
+        throw runtime_error{"Could not open Encodec. "};
     }
 
     //find the empty stream to use for encoder
-    videoIndexOut=-1;
+    int videoIndexOut=-1;
     for(int i=0;i<(int)avFmtCtx->nb_streams;i++) {
         if (avFmtCtxOut->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_UNKNOWN) {
             videoIndexOut=i;
         }
     }
     if (videoIndexOut<0) {
-        qDebug()<<"Cannot find empty stream for encoder";
-        return;
+        throw runtime_error{"Cannot find empty stream for encoder"};
     }
 
     //setting the encoder context to the empty stream
-    avcodec_parameters_from_context(avFmtCtx->streams[videoIndexOut]->codecpar,avEncoderCtx);
+    avcodec_parameters_from_context(avFmtCtxOut->streams[videoIndexOut]->codecpar,avEncoderCtx);
 
     //open output url
-    if (avio_open(&avFmtCtx->pb, outFilePath.c_str(),AVIO_FLAG_READ_WRITE)<0) {
-        qDebug()<<"Can't open the path with read and write";
-        return;
+    if (avio_open(&avFmtCtxOut->pb, outFilePath.c_str(),AVIO_FLAG_READ_WRITE)<0) {
+        throw runtime_error{"Can't open the path with read and write"};
     }
 
     //get the context for setting it up to convert raw frames to the format your encoder
@@ -182,8 +173,6 @@ void Screenrecorder::init_videoVariables() {
     avYUVFrame->width = avRawCodecCtx->width;
     avYUVFrame->height = avRawCodecCtx->height;
     avYUVFrame->format = AV_PIX_FMT_YUV420P;
-
-    qDebug()<<"initvideovariables succeeded";
 }
 
 void Screenrecorder::init_audioSource() {
@@ -201,14 +190,12 @@ void Screenrecorder::init_audioSource() {
     //set input format
     AudioInputFormat=av_find_input_format("dshow");
     if (avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions)!=0) {
-        qDebug()<<"Unable to find input audio";
-        return;
+        throw runtime_error{"Unable to find input audio"};
     }
 
     //check stream info
     if (avformat_find_stream_info(FormatContextAudio,NULL)<0) {
-        qDebug()<<"Unable to find stream information";
-        return;
+        throw runtime_error{"Unable to find stream information"};
     }
 
     //find audio stream index
@@ -222,11 +209,8 @@ void Screenrecorder::init_audioSource() {
 
     //couldnt find throw error
     if (ado_stream_index==-1 || ado_stream_index>=(int)FormatContextAudio->nb_streams) {
-        qDebug()<<"Unable to find the audio stream..";
-        return;
+        throw runtime_error{"Unable to find the audio stream.."};
     }
-    qDebug()<<"init Audio source successfullll";
-
 }
 
 void Screenrecorder::init_audioVariables() {
@@ -235,42 +219,36 @@ void Screenrecorder::init_audioVariables() {
     //find decoder codec
     AudioDecodec=avcodec_find_decoder(AudioParams->codec_id);
     if (AudioDecodec==NULL) {
-        qDebug()<<"Couldnt find a decoder";
-        return;
+        throw runtime_error{"Couldnt find a decoder"};
     }
 
     //alloc audio decoder ctx
     AudioDecoderCtx=avcodec_alloc_context3(AudioDecodec);
     if (avcodec_parameters_to_context(AudioDecoderCtx,AudioParams)<0) {
-        qDebug()<<"Unable to set audio parameters ctx to decoder ctx";
-        return;
+        throw runtime_error("Unable to set audio parameters ctx to decoder ctx");
     }
 
     //open the codec
-    if (avcodec_open2(AudioDecoderCtx,AudioDecodec,nullptr)<0) {
-        qDebug()<<"cant open the decoder...";
-        return;
+    if (avcodec_open2(AudioDecoderCtx,AudioDecodec,NULL)<0) {
+        throw runtime_error("cant open the decoder...");
     }
 
     // new audio stream output
-    qDebug()<<"checkpoint 1 reached successfully";
-    AVStream* ado_out_st=avformat_new_stream(avFmtCtxOut,nullptr);
+    //qDebug()<<"checkpoint 1 reached successfully";
+    AVStream* ado_out_st=avformat_new_stream(avFmtCtxOut,NULL);
     if (!ado_out_st) {
-        qDebug()<<"it does not detect any stream for output";
-        return;
+        throw runtime_error("it does not detect any stream for output");
     }
 
     //find the encodec output
     AudioEncodec=avcodec_find_encoder(AV_CODEC_ID_AAC);
     if (!AudioEncodec) {
-        qDebug()<<"can not find encoder";
-        return;
+        throw runtime_error("can not find encoder");
     }
     //setting up the context for the encoder
     AudioEncoderCtx=avcodec_alloc_context3(AudioEncodec);
     if (!AudioEncoderCtx) {
-        qDebug()<<"Can not perform alloc for EncoderCtx";
-        return;
+        throw runtime_error("Can not perform alloc for EncoderCtx");
     }
 
     if (AudioEncodec->supported_samplerates) {
@@ -295,7 +273,7 @@ void Screenrecorder::init_audioVariables() {
         AudioEncoderCtx->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
     if (avcodec_open2(AudioEncoderCtx,AudioEncodec,NULL)<0) {
-        qDebug()<<"Error on opening encoder";
+        throw runtime_error("Error on opening encoder");
     }
 
     audioIndexOut=-1;
@@ -305,11 +283,9 @@ void Screenrecorder::init_audioVariables() {
         }
     }
     if (audioIndexOut<0) {
-        qDebug()<<"cannot find empty stream for audio";
-        return;
+        throw runtime_error("cannot find empty stream for audio");
     }
     avcodec_parameters_from_context(avFmtCtxOut->streams[audioIndexOut]->codecpar,AudioEncoderCtx);
-    qDebug()<<"init of audio variables was success";
 }
 
 void Screenrecorder::init_outputFile() {
@@ -317,23 +293,18 @@ void Screenrecorder::init_outputFile() {
     //create an empty file it not exists
     if (!(avFmtCtxOut->flags & AVFMT_NOFILE)) {
         if (avio_open2(&avFmtCtxOut->pb, outFilePath.c_str(),AVIO_FLAG_WRITE,NULL,NULL)<0) {
-            qDebug()<<"Error creating new file";
-            return;
+            throw runtime_error("Error creating new file");
         }
     }
 
     //find encoder stream
     if (avFmtCtxOut->nb_streams==0) {
-        qDebug()<<"no stream is init...";
-        return;
+        throw runtime_error("no stream is init...");
     }
 
     if (avformat_write_header(avFmtCtxOut,NULL)<0) {
-        qDebug()<<"error in writing the header context...";
-        return;
+        throw runtime_error("error in writing the header context...");
     }
-
-    qDebug()<<"initializing the output file... is done";
 }
 
 Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice)
@@ -357,14 +328,30 @@ Screenrecorder::Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, str
 
     qDebug() << "  outFilePath:" << QString::fromStdString(outFilePath);
     qDebug() << "  audioDevice:" << QString::fromStdString(audioDevice);
-
-    init_devicesEncodec();
-    init_videoSource();
-    init_videoVariables();
-
-    if (vd.audio) {
-        init_audioSource();
-        init_audioVariables();
+    try {
+        init_devicesEncodec();
+        qDebug()<<"done ready.";
+        init_videoSource();
+        qDebug()<<"videoSource is done";
+        init_videoVariables();
+        qDebug()<<"initvideovariables succeeded";
+        if (vd.audio) {
+            init_audioSource();
+            qDebug()<<"init Audio source successfullll";
+            init_audioVariables();
+            qDebug()<<"init of audio variables was success";
+        }
+        init_outputFile();
+        qDebug()<<"initializing the output file... is done";
     }
-    init_outputFile();
+    catch (const std::exception &e) {
+        qDebug() << "Caught exception:" << e.what();
+        throw;
+    }
+}
+
+void Screenrecorder::record()
+{
+    audio_stop=false;
+
 }
