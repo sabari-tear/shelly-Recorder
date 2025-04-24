@@ -163,6 +163,11 @@ public:
     void acquireAudio();
     //
 
+    //
+    void init_fifo();
+    //
+    AVAudioFifo *AudioFifoBuff;
+
 };
 
 #endif // SCREENRECORDER_H

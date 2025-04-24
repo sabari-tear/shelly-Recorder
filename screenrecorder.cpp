@@ -540,9 +540,22 @@ void Screenrecorder::getRawPackets(){
     qDebug()<<"End get RawPacket";
 }
 
+void Screenrecorder::init_fifo() {
+    if (!(AudioFifoBuff=av_audio_fifo_alloc(AudioEncoderCtx->sample_fmt, AudioEncoderCtx->channels,1))) {
+        throw runtime_error{"allocationg fifo error..."};
+    }
+}
+
 void Screenrecorder::acquireAudio() {
+    int ret;
+    AVPacket *inPacket, *outPacket;
+    AVFrame *rawFrame, *scaledFrame;
+    uint8_t **resampledData;
+
+    init_fifo();
 
 }
+
 
 void Screenrecorder::record()
 {
