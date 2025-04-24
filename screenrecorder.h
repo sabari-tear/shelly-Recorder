@@ -172,6 +172,13 @@ public:
     bool videoReady();
     //
 
+    //
+    void audioEnd();
+    //
+
+    //
+    void initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size);
+    //
 };
 
 #endif // SCREENRECORDER_H

@@ -551,6 +551,11 @@ bool Screenrecorder::videoReady() {
     return video_ready;
 }
 
+void Screenrecorder::audioEnd() {
+    lock_guard<mutex> lg(audio_lock);
+    audio_end = true;
+}
+
 void Screenrecorder::acquireAudio() {
     int ret;
     AVPacket *inPacket, *outPacket;
@@ -612,7 +617,122 @@ void Screenrecorder::acquireAudio() {
 
     qDebug()<< "audio started";
 
+    while (true) {
+        unique_lock<mutex> ul(status_lock);
+        if (status == RecordingStatus::paused) {
+            qDebug()<<"audio pause";
+            avformat_close_input(&FormatContextAudio);
+            if (FormatContextAudio != nullptr) {
+                throw std::logic_error("Error: unable to close the FormatContextAudio (before pause)");
+            }
+        }
+        cv.wait(ul, [this]() { return status != RecordingStatus::paused; });
+        if (status == RecordingStatus::stopped) {
 
+            qDebug() << "audio end" ;
+
+            audioEnd();
+            ul.unlock();
+
+            ul_audio.lock();
+
+            cv_audio.wait(ul_audio, [this]() { return isVideoEnd(); });
+
+            ul_audio.unlock();
+
+            break;
+        }
+        ul.unlock();
+        if (av_read_frame(FormatContextAudio, inPacket) >= 0 && inPacket->stream_index == ado_stream_index) {
+
+            //decoding part
+
+            av_packet_rescale_ts(outPacket, FormatContextAudio->streams[ado_stream_index]->time_base, AudioDecoderCtx->time_base);
+
+            if ((ret = avcodec_send_packet(AudioDecoderCtx, inPacket)) < 0) {
+                throw runtime_error("failed to decode current audio packet ");
+                continue;
+            }
+            while (ret >= 0) {
+                ret = avcodec_receive_frame(AudioDecoderCtx, rawFrame);
+
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                    break;
+                else if (ret < 0) {
+                    throw runtime_error("processed error during decoding");
+                }
+                if (avFmtCtxOut->streams[audioIndexOut]->start_time <= 0) {
+                    avFmtCtxOut->streams[audioIndexOut]->start_time = rawFrame->pts;
+                }
+                initConvertedSamples(&resampledData, AudioEncoderCtx, rawFrame->nb_samples);
+
+                swr_convert(swrContext,
+                            resampledData, rawFrame->nb_samples,
+                            (const uint8_t **)rawFrame->extended_data, rawFrame->nb_samples);
+                add_samples_to_fifo(resampledData, rawFrame->nb_samples);
+
+                //raw frame ready
+                av_init_packet(outPacket);
+                outPacket->data = nullptr;
+                outPacket->size = 0;
+
+                scaledFrame = av_frame_alloc();
+                if (!scaledFrame) {
+                    throw runtime_error("Cannot allocate an AVPacket for encoded audio");
+                }
+
+                scaledFrame->nb_samples = AudioEncoderCtx->frame_size;
+                scaledFrame->channel_layout = AudioEncoderCtx->channel_layout;
+                scaledFrame->format = AudioEncoderCtx->sample_fmt;
+                scaledFrame->sample_rate = AudioEncoderCtx->sample_rate;
+                av_frame_get_buffer(scaledFrame, 0);
+                while (av_audio_fifo_size(AudioFifoBuff) >= AudioEncoderCtx->frame_size) {
+                    ret = av_audio_fifo_read(AudioFifoBuff, (void **)(scaledFrame->data), AudioEncoderCtx->frame_size);
+                    scaledFrame->pts = pts;
+                    pts += scaledFrame->nb_samples;
+
+                    if (avcodec_send_frame(AudioEncoderCtx, scaledFrame) < 0) {
+                        throw runtime_error("Cannot encode current audio packet ");
+                    }
+
+                    while (ret >= 0) {
+                        ret = avcodec_receive_packet(AudioEncoderCtx, outPacket);
+                        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                            break;
+                        else if (ret < 0) {
+                            throw runtime_error("Error during encoding");
+                        }
+                        av_packet_rescale_ts(outPacket, AudioEncoderCtx->time_base, avFmtCtxOut->streams[audioIndexOut]->time_base);
+                        outPacket->stream_index = audioIndexOut;
+
+                        unique_lock<mutex> write_lock_ul{write_lock};
+#if defined _WIN32
+                        if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
+                            throw runtime_error("Error in writing audio frame");
+                        }
+#else
+                        if (gotFirstValidVideoPacket) {
+                            if (!firstBuffer) {
+                                if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
+                                    throw runtime_error("Error in writing audio frame");
+                                }
+                            } else {
+                                firstBuffer = false;
+                            }
+                        }
+#endif
+                        write_lock_ul.unlock();
+                        av_packet_unref(outPacket);
+                    }
+                    ret = 0;
+                }
+
+                av_frame_free(&scaledFrame);
+                av_packet_unref(outPacket);
+            }
+        }
+    }
+    cout << "END ACQUIREAUDIO" << endl;
 }
 
 
