@@ -139,9 +139,25 @@ public:
     void getRawPackets();
     //
     bool video_ready=false;
+    condition_variable cv_video;
+    condition_variable cv_audio;
+    condition_variable cv;
+    bool audio_end = false;
 
     //
     int getlatestFramesValue();
+    //
+
+    //
+    bool audioReady();
+    //
+    mutex audio_lock;
+    bool audio_ready;
+
+    //
+    void videoEnd();
+    //
+
 };
 
 #endif // SCREENRECORDER_H

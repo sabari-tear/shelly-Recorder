@@ -461,6 +461,85 @@ void Screenrecorder::decodeAndEncode() {
     qDebug()<<"ended decode encode";
 }
 
+int Screenrecorder::getlatestFramesValue() {
+    int base=10;
+    int result =0;
+    double numerator =5;
+    double fps=vd.fps;
+    if (fps<8)
+        fps=8;
+    double denominator =((fps-7)+0.00)/60.00;
+    double factor =numerator/denominator;
+    int divisor=factor/5.00;
+    double rest_factor=factor-(divisor*5);
+    if (rest_factor>=2.5)
+        result=(divisor*5)+5;
+    else
+        result=divisor*5;
+    return base+result;
+}
+
+bool Screenrecorder::audioReady() {
+    lock_guard<mutex> lg(audio_lock);
+    return audio_ready;
+}
+
+void Screenrecorder::videoEnd() {
+    lock_guard<mutex> lg(video_lock);
+    video_end=true;
+    if (vd.audio)
+        cv_audio.notify_all();
+}
+
+void Screenrecorder::getRawPackets(){
+    AVPacket *avRawPkt;
+    int value = -1;
+    int framesValue = getlatestFramesValue();
+
+    if (vd.audio) {
+        unique_lock<mutex> ul_video(video_lock);
+        video_ready=true;
+        qDebug()<<"video Ready";
+        cv_video.wait(ul_video,[this]() {return audioReady();});
+        cv_audio.notify_all();
+        ul_video.unlock();
+        qDebug()<<"video started";
+    }
+    try {
+        while (framesValue!=0) {
+            unique_lock<mutex> ul(status_lock);
+
+            if (status==RecordingStatus::paused)
+                qDebug()<<"Video Pause";
+
+            cv.wait(ul,[this]() { return status!=RecordingStatus::paused; });
+
+            if (status==RecordingStatus::stopped && (audio_end|| !vd.audio)) {
+                if (value>=0)
+                    framesValue--;
+            }
+
+            ul.unlock();
+
+            avRawPkt=av_packet_alloc();
+            value=av_read_frame(avFmtCtx,avRawPkt);
+
+            if (value>=0 && avRawPkt->size) {
+                unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
+                avRawPkt_queue.push(avRawPkt);
+                avRawPkt_queue_ul.unlock();
+            }
+        }
+    }
+    catch (const std::exception &e) {
+        videoEnd();
+        qDebug()<<"Caught exception:"<<e.what();
+        throw;
+    }
+    videoEnd();
+    qDebug()<<"End get RawPacket";
+}
+
 void Screenrecorder::record()
 {
     audio_stop=false;
@@ -469,6 +548,12 @@ void Screenrecorder::record()
     eloborate_thread = make_unique<thread> ([this]() {
         this->make_error_handler([this]() {
             this->decodeAndEncode();
-        })
-    })
+        })();
+    });
+
+    captureVideo_thread = make_unique<thread>([this]() {
+        this->make_error_handler([this]() {
+            this->getRawPackets();
+        })();
+    });
 }
