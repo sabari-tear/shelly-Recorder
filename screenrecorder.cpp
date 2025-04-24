@@ -366,6 +366,11 @@ function<void(void)> Screenrecorder::make_error_handler(function<void(void)> f) 
     };
 }
 
+bool Screenrecorder::isVideoEnd() {
+    lock_guard<mutex> lg(video_lock);
+    return video_end;
+}
+
 void Screenrecorder::decodeAndEncode() {
     int got_picture=0;
     int flag=0;
@@ -377,10 +382,11 @@ void Screenrecorder::decodeAndEncode() {
 
     AVFrame* avOutFrame;
     avOutFrame=av_frame_alloc();
-    av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t*)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, evEncoderCtx->height, 1);
+    av_image_fill_arrays(avOutFrame->data, avOutFrame->linesize, (uint8_t*)outBuf, avEncoderCtx->pix_fmt, avEncoderCtx->width, avEncoderCtx->height, 1);
 
     AVPacket pkt;
-    av_init_packet(&pkt);
+    av_packet_ref(&pkt, av_packet_alloc()); // Copy from a properly initialized packet
+
 
     AVPacket* avRawPkt;
     int i=1;
@@ -388,8 +394,71 @@ void Screenrecorder::decodeAndEncode() {
 
     while(true) {
         unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
+        if (!avRawPkt_queue.empty()) {
+            avRawPkt = avRawPkt_queue.front();
+            avRawPkt_queue.pop();
+            avRawPkt_queue_ul.unlock();
+            if (avRawPkt->stream_index == vdo_stream_index) {
+                //Start DECODING
+                flag = avcodec_send_packet(avRawCodecCtx, avRawPkt);
+
+                av_packet_unref(avRawPkt);
+                av_packet_free(&avRawPkt);
+
+                if (flag < 0) {
+                    throw runtime_error("Decoding Error: sending packet");
+                }
+                got_picture = avcodec_receive_frame(avRawCodecCtx, avOutFrame);
+
+                //End DECODING
+                if (got_picture == 0) {
+                    sws_scale(swsCtx, avOutFrame->data, avOutFrame->linesize, 0, avRawCodecCtx->height, avYUVFrame->data, avYUVFrame->linesize);
+
+                    //Start ENCODING
+                    avYUVFrame->pts = (int64_t)j * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vd.fps;
+                    j++;
+                    flag = avcodec_send_frame(avEncoderCtx, avYUVFrame);
+
+                    if (flag >= 0) {
+                        got_picture = avcodec_receive_packet(avEncoderCtx, &pkt);
+                        //Fine ENCODING
+                        if (got_picture == 0) {
+                            if (!gotFirstValidVideoPacket) {
+                                gotFirstValidVideoPacket = true;
+                            }
+                            pkt.pts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vd.fps;
+                            pkt.dts = (int64_t)i * (int64_t)30 * (int64_t)30 * (int64_t)100 / (int64_t)vd.fps;
+
+                            unique_lock<mutex> write_lock_ul{write_lock};
+                            if (av_write_frame(avFmtCtxOut, &pkt) < 0) {
+                                throw runtime_error("Error in writing file");
+                            }
+                            write_lock_ul.unlock();
+                            i++;
+                        }
+                    }
+                } else {
+                    throw runtime_error("Error Decoding: receiving packet");
+                }
+            }
+        } else {
+            avRawPkt_queue_ul.unlock();
+            unique_lock<mutex> ul(status_lock);
+            if (status == RecordingStatus::stopped) {
+                ul.unlock();
+                avRawPkt_queue_ul.lock();
+                if (avRawPkt_queue.empty() && isVideoEnd()) {
+                    avRawPkt_queue_ul.unlock();
+                    break;
+                }
+                avRawPkt_queue_ul.unlock();
+            }
+            //ul.unlock();
+        }
     }
 
+    av_packet_unref(&pkt);
+    qDebug()<<"ended decode encode";
 }
 
 void Screenrecorder::record()

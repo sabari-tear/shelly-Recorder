@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include <QDebug>
-
+#include <QRect>
 MainWindow::MainWindow(QObject* parent) : QObject(parent) {}
 
 void MainWindow::set_fullscreen() {
     QScreen* scr = QGuiApplication::primaryScreen();
-    curr.width=scr->size().width();
-    curr.height=scr->size().height();
+    QRect geo = scr->geometry();
+    curr.width = geo.width();
+    curr.height = geo.height();
     curr.offset_x=0;
     curr.offset_y=0;
     curr.screen_number=0;
@@ -85,7 +86,19 @@ void MainWindow::get_quality(int quality)
     qDebug()<<quality<<" is set";
 }
 void MainWindow::start_record() {
-    recorder=new Screenrecorder(curr, curr_details, output, audiodevice_name);
-    recorder->record();
+    try {
+        recorder=new Screenrecorder(curr, curr_details, output, audiodevice_name);
+        qDebug()<<"Built Screen recorder";
+        auto record_thread=std::thread{[&](){
+                try {
+                    qDebug()<<"Started recording..";
+                    recorder->record();
+                }
+                catch (const std::exception &e) {
+                    qDebug()<<"Caught exception:"<<e.what();
+                    throw;
+                }
+        }};
+    }
 }
 

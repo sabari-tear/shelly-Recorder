@@ -110,6 +110,7 @@ public:
     bool audio_stop;
     bool gotFirstValidVideoPacket;
     unique_ptr<thread> eloborate_thread;
+    unique_ptr<thread> captureVideo_thread;
 
     //
     function<void(void)> make_error_handler(function<void(void)> f);
@@ -119,8 +120,28 @@ public:
     condition_variable error_queue_cv;
     queue <string> error_queue;
 
+    //
     void decodeAndEncode();
+    //
     mutex avRawPkt_queue_mutex;
+    queue<AVPacket *> avRawPkt_queue;
+    mutex write_lock;
+    mutex status_lock;
+    RecordingStatus status;
+
+    //
+    bool isVideoEnd();
+    //
+    mutex video_lock;
+    bool video_end = false;
+
+    //
+    void getRawPackets();
+    //
+    bool video_ready=false;
+
+    //
+    int getlatestFramesValue();
 };
 
 #endif // SCREENRECORDER_H
