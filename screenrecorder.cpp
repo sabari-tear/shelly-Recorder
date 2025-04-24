@@ -546,6 +546,11 @@ void Screenrecorder::init_fifo() {
     }
 }
 
+bool Screenrecorder::videoReady() {
+    lock_guard<mutex> lg(video_lock);
+    return video_ready;
+}
+
 void Screenrecorder::acquireAudio() {
     int ret;
     AVPacket *inPacket, *outPacket;
@@ -553,6 +558,60 @@ void Screenrecorder::acquireAudio() {
     uint8_t **resampledData;
 
     init_fifo();
+
+    inPacket = (AVPacket *)av_malloc(sizeof(AVPacket));
+    if (!inPacket) {
+        throw runtime_error("failed to allocate an AVPacket for encoded video");
+    }
+
+    av_packet_ref(inPacket, av_packet_alloc());
+
+    rawFrame = av_frame_alloc();
+    if (!rawFrame) {
+        throw runtime_error("failed allocate an AVPacket for encoded video");
+    }
+
+    scaledFrame = av_frame_alloc();
+    if (!scaledFrame) {
+        throw runtime_error("failed allocate an AVPacket for encoded video");
+    }
+
+    outPacket = (AVPacket *)av_malloc(sizeof(AVPacket));
+    if (!outPacket) {
+        throw runtime_error("failed allocate an AVPacket for encoded video");
+    }
+
+
+    SwrContext *swrContext = nullptr;
+    swrContext = swr_alloc_set_opts(swrContext,
+                                    av_get_default_channel_layout(AudioEncoderCtx->channels),
+                                    AudioEncoderCtx->sample_fmt,
+                                    AudioEncoderCtx->sample_rate,
+                                    av_get_default_channel_layout(AudioDecoderCtx->channels),
+                                    AudioDecoderCtx->sample_fmt,
+                                    AudioDecoderCtx->sample_rate,
+                                    0,
+                                    nullptr);
+
+    if (!swrContext) {
+        throw runtime_error("Cannot allocate the resample context");
+    }
+    if (swr_init(swrContext) < 0) {
+        throw runtime_error("Could not open resample context");
+        swr_free(&swrContext);
+    }
+
+    unique_lock<mutex> ul_audio(audio_lock);
+    audio_ready = true;
+
+    qDebug()<< "audio ready";
+
+    cv_audio.wait(ul_audio, [this]() { return videoReady(); });
+    cv_video.notify_all();
+    ul_audio.unlock();
+
+    qDebug()<< "audio started";
+
 
 }
 

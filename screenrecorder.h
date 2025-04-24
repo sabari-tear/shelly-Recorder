@@ -168,6 +168,10 @@ public:
     //
     AVAudioFifo *AudioFifoBuff;
 
+    //
+    bool videoReady();
+    //
+
 };
 
 #endif // SCREENRECORDER_H
