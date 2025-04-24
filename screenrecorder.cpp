@@ -540,6 +540,10 @@ void Screenrecorder::getRawPackets(){
     qDebug()<<"End get RawPacket";
 }
 
+void Screenrecorder::acquireAudio() {
+
+}
+
 void Screenrecorder::record()
 {
     audio_stop=false;
@@ -556,4 +560,11 @@ void Screenrecorder::record()
             this->getRawPackets();
         })();
     });
+    if (vd.audio) {
+        captureAudio_thread=make_unique<thread>([this]() {
+            this->make_error_handler([this]() {
+                this->acquireAudio();
+            })();
+        });
+    }
 }

@@ -111,6 +111,7 @@ public:
     bool gotFirstValidVideoPacket;
     unique_ptr<thread> eloborate_thread;
     unique_ptr<thread> captureVideo_thread;
+    unique_ptr<thread> captureAudio_thread;
 
     //
     function<void(void)> make_error_handler(function<void(void)> f);
@@ -156,6 +157,10 @@ public:
 
     //
     void videoEnd();
+    //
+
+    //
+    void acquireAudio();
     //
 
 };
