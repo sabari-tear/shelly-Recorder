@@ -162,6 +162,7 @@ public:
     //
     void acquireAudio();
     //
+    int64_t pts = 0;
 
     //
     void init_fifo();
@@ -179,6 +180,8 @@ public:
     //
     void initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size);
     //
+
+    void add_samples_to_fifo(uint8_t **converted_input_samples, const int frame_size);
 };
 
 #endif // SCREENRECORDER_H

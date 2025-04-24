@@ -556,6 +556,29 @@ void Screenrecorder::audioEnd() {
     audio_end = true;
 }
 
+void Screenrecorder::initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size) {
+    if (!(*converted_input_samples = (uint8_t **)calloc(output_codec_context->channels, sizeof(**converted_input_samples)))) {
+        throw runtime_error("Could not allocate converted input sample pointers");
+    }
+    if (av_samples_alloc(*converted_input_samples, nullptr, output_codec_context->channels, frame_size, output_codec_context->sample_fmt, 0) < 0) {
+        throw runtime_error("could not allocate memory for samples in all channels (audio)");
+    }
+}
+
+void Screenrecorder::add_samples_to_fifo(uint8_t **converted_input_samples, const int frame_size) {
+    int error;
+    // Make the FIFO as large as it needs to be to hold both,
+    // the old and the new samples.
+    if ((error = av_audio_fifo_realloc(AudioFifoBuff, av_audio_fifo_size(AudioFifoBuff) + frame_size)) < 0) {
+        throw runtime_error("Could not reallocate FIFO");
+    }
+    // Store the new samples in the FIFO buffer.
+    if (av_audio_fifo_write(AudioFifoBuff, (void **)converted_input_samples, frame_size) < frame_size) {
+        throw runtime_error("Could not write data to FIFO");
+    }
+}
+
+
 void Screenrecorder::acquireAudio() {
     int ret;
     AVPacket *inPacket, *outPacket;
@@ -671,8 +694,8 @@ void Screenrecorder::acquireAudio() {
                             (const uint8_t **)rawFrame->extended_data, rawFrame->nb_samples);
                 add_samples_to_fifo(resampledData, rawFrame->nb_samples);
 
-                //raw frame ready
-                av_init_packet(outPacket);
+                //raw frame init
+                av_packet_ref(outPacket, av_packet_alloc());
                 outPacket->data = nullptr;
                 outPacket->size = 0;
 
@@ -692,7 +715,7 @@ void Screenrecorder::acquireAudio() {
                     pts += scaledFrame->nb_samples;
 
                     if (avcodec_send_frame(AudioEncoderCtx, scaledFrame) < 0) {
-                        throw runtime_error("Cannot encode current audio packet ");
+                        throw runtime_error("Couldnt encode current audio packet ");
                     }
 
                     while (ret >= 0) {
@@ -700,27 +723,17 @@ void Screenrecorder::acquireAudio() {
                         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                             break;
                         else if (ret < 0) {
-                            throw runtime_error("Error during encoding");
+                            throw runtime_error("failed part o during encoding");
                         }
                         av_packet_rescale_ts(outPacket, AudioEncoderCtx->time_base, avFmtCtxOut->streams[audioIndexOut]->time_base);
                         outPacket->stream_index = audioIndexOut;
 
                         unique_lock<mutex> write_lock_ul{write_lock};
-#if defined _WIN32
+
                         if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
                             throw runtime_error("Error in writing audio frame");
                         }
-#else
-                        if (gotFirstValidVideoPacket) {
-                            if (!firstBuffer) {
-                                if (av_write_frame(avFmtCtxOut, outPacket) != 0) {
-                                    throw runtime_error("Error in writing audio frame");
-                                }
-                            } else {
-                                firstBuffer = false;
-                            }
-                        }
-#endif
+
                         write_lock_ul.unlock();
                         av_packet_unref(outPacket);
                     }
@@ -732,7 +745,7 @@ void Screenrecorder::acquireAudio() {
             }
         }
     }
-    cout << "END ACQUIREAUDIO" << endl;
+    qDebug()<<"ended the aqcuire AUDIO func";
 }
 
 
