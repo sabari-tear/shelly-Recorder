@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     // Create and expose MainWindow
     MainWindow mw;
     engine.rootContext()->setContextProperty("backend", &mw);
-    //qmlRegisterType<MainWindow>("backend", 1, 0, "MainWindow");
+    qmlRegisterType<MainWindow>("backend", 1, 0, "MainWindow");
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(

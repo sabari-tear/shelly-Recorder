@@ -1,538 +1,585 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Material
+import QtQuick.Layouts
+import QtQuick.Effects
 import Qt.labs.platform
 
 Window {
-    width: 450
-    height: 450
-    visible: true
-    title: qsTr("Hello World")
+    id: win
+    width: 400
+    height: 550
+    color: "#0e0f12"
+    minimumHeight: 550
+    maximumHeight: 550
+    minimumWidth: 400
+    maximumWidth: 400
 
     Rectangle {
-        id : main
-        visible: true
-        anchors.fill: parent
-        color: "#000000"
-
-        Rectangle {
-            id :  fullscreen
-            x: 31
-            y: 41
-            width: 100
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                anchors.centerIn: parent
-                text: "Fullscreen"
-                color: "#FFFFFF"
-
-            }
-
-            MouseArea {
-                id: mouseArea_fullscreen
-                anchors.fill: parent
-                onClicked: {
-                    backend.set_fullscreen()
-                    selectAreaLoader.active=false
-                }
-            }
-            radius: 20
-            Component.onCompleted: {
-                console.log("QML Loaded")
-                backend.set_fullscreen()
-            }
+        id: quality
+        anchors.left: parent.left
+        anchors.leftMargin: 17
+        anchors.top: fps_selector.bottom
+        anchors.topMargin: 15
+        anchors.right: parent.right
+        anchors.rightMargin: 17
+        height: 50
+        color:"transparent"
+        border.color: "#1c1e20"
+        radius: 10
+        Text {
+            id: quality_text
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 15
+            text: "Quality"
+            color:"#FFFFFF"
+            font.pointSize: 12
         }
-
-        Rectangle {
-            id : select_area
-            x: 183
-            y: 41
-            width: 100
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                anchors.centerIn: parent
-                text: "Select Area"
-                color: "#FFFFFF"
-
-            }
-
-            MouseArea {
-                id: mouseArea_select_area
-                anchors.fill: parent
-                onClicked: {
-                    console.log("Select Area button clicked")
-                    selectAreaLoader.active = true
-                    console.log("Loader active state:", selectAreaLoader.active)
-                    console.log("Loader status:", selectAreaLoader.status)
-                    console.log("Loader source:", selectAreaLoader.source)
-                }
-            }
-            radius: 20
-        }
-
-        Loader {
-            id: selectAreaLoader
-            active: false
-            source: "qrc:/selectarea.qml"
-            onStatusChanged: {
-                console.log("Loader status changed to:", status)
-                if (status === Loader.Error) {
-                    console.log("Loader error:", selectAreaLoader.sourceComponent.errorString())
-                }
-            }
-        }
-
-        property string savePath: ""
-
-        Rectangle {
-            id: path
-            x: 31
-            y: 92
-            width: 200
-            height: 30
-            color: "#2a2a2a"
-            radius: 20
-
-            TextInput {
-                id: textInput
-                anchors.centerIn: parent
-                text: qsTr("C:/Users/LENOVO/Videos/out.mp4")
-                color: "#ffffff"
-                width: parent.width - 20
-            }
-            Component.onCompleted: {
-                backend.set_customlocation(textInput.text)
-            }
-        }
-
-        Rectangle {
-            id: browse_path
-            x: 253
-            y: 92
-            width: 30
-            height: 30
-            color: "#2a2a2a"
-
-            Text {
-                anchors.centerIn: parent
-                text: "..."
-                color: "#ffffff"
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: saveDialog.open()
-            }
-
-            FileDialog {
-                id: saveDialog
-                title: "Choose file to save"
-                fileMode: FileDialog.SaveFile
-                nameFilters: ["MP4 Files (*.mp4)"]
-                defaultSuffix: "mp4"
-                onAccepted: {
-                    textInput.text = saveDialog.file.toString().replace("file:///", "")
-                    console.log("Save file path: " + textInput.text)
-                    backend.set_customlocation(textInput.text)
-                }
-            }
-        }
-
-        Rectangle {
-            id: system_tray
-            x: 31
-            y: 149
-            width:30
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                id: no_system
-                anchors.centerIn: parent
-                color: "#FFFFFF"
-                text: "no"
-                visible:true
-            }
-            Text {
-                id: yes_system
-                anchors.centerIn: parent
-                color: "#FFFFFF"
-                text: "yes"
-                visible:false
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (no_system.visible) {
-                        yes_system.visible=true;
-                        no_system.visible=false;
-                    }
-                    else {
-                        no_system.visible=true;
-                        yes_system.visible=false;
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            id: need_audio
-            x: 31
-            y: 204
-            width: no_audio.width+yes_audio.width
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                id: no_audio
-                anchors.centerIn: parent
-                color: "#FFFFFF"
-                text: "audio_ no"
-                visible:true
-            }
-            Text {
-                id: yes_audio
-                anchors.centerIn: parent
-                color: "#FFFFFF"
-                text: "audio_yes"
-                visible:false
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    if (no_audio.visible) {
-                        yes_audio.visible=true;
-                        backend.set_audio(1);
-                        no_audio.visible=false;
-                    }
-                    else {
-                        no_audio.visible=true;
-                        backend.set_audio(0);
-                        yes_audio.visible=false;
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            id: select_fps
-            width:250
-            height: 30
-            color:"#2a2a2a"
-            property string curr: "24"
-            x: 193
-            y: 204
-            Row {
-                leftPadding: 20
-                spacing:10
-                Rectangle {
-                    id: curr_fps
-                    width: 90
-                    height: 30
-                    color: "#1a1a1a"
-                    Text {
-                        anchors.centerIn: parent
-                        text: "selected_fps : " + select_fps.curr
-                        color: "#FFFFFF"
-                        visible: true
-                    }
-                    Component.onCompleted: backend.get_fps(24)
-                }
-
-                Rectangle {
-                    id : select_24
-                    width: 30
-                    height: 30
-                    color: "#3a3a3a"
-                    Text {
-                        anchors.centerIn: parent
-                        text: "24"
-                        color: "#FFFFFF"
-                    }
-
-                    MouseArea {
-                        id: mouseArea_select_24
-                        anchors.fill: parent
-                        onClicked: {
-                            backend.get_fps(24);
-                            select_fps.curr="24";
-                        }
-                    }
-                    radius: 2
-                }
-                Rectangle {
-                    id : select_30
-                    width: 30
-                    height: 30
-                    color: "#3a3a3a"
-                    Text {
-                        anchors.centerIn: parent
-                        text: "30"
-                        color: "#FFFFFF"
-                    }
-
-                    MouseArea {
-                        id: mouseArea_select_30
-                        anchors.fill: parent
-                        onClicked: {
-                            backend.get_fps(30);
-                            select_fps.curr="30";
-                        }
-                    }
-                    radius: 2
-                }
-                Rectangle {
-                    id : select_60
-                    width: 30
-                    height: 30
-                    color: "#3a3a3a"
-                    Text {
-                        anchors.centerIn: parent
-                        text: "60"
-                        color: "#FFFFFF"
-                    }
-
-                    MouseArea {
-                        id: mouseArea_select_60
-                        anchors.fill: parent
-                        onClicked: {
-                            backend.get_fps(60);
-                            select_fps.curr="60";
-                        }
-                    }
-                    radius: 6
-                }
-            }
-        }
-
         Rectangle {
             id: slider
-            x: 31
-            y: 259
-            width: 200
-            height: 60
-            color: "#2a2a2a"
+            anchors.left: quality_text.right
+            anchors.right: parent.right
+            anchors.leftMargin: 30
+            anchors.rightMargin: 30
+            anchors.verticalCenter: parent.verticalCenter
+            color: "#1c1e20"
+            height: 5
+            radius: 30
 
-            property int minValue: 0
-            property int maxValue: 100
-            property int currentValue: 0
+            property int indi_x: 0
 
             Rectangle {
-                id: slider_text
-                width: parent.width
-                height: 20
-                color:"#2a2a2a"
-                Text {
-                    id: slider_text_comp
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "quality: " + slider.currentValue
-                    color: "#FFFFFF"
+                id: indicator
+                width: 15
+                height: 15
+                anchors.verticalCenter: parent.verticalCenter
+                radius: 100
+                color: "#4f46d8"
+                x: slider.indi_x
+
+                MouseArea {
+                    id: mover_indi
+                    anchors.fill: parent
+                    drag.target: indicator
+                    drag.axis: Drag.XAxis
+                    drag.minimumX: 0
+                    drag.maximumX: slider.width - indicator.width
+                    onPositionChanged: {
+                        slider.indi_x = indicator.x
+                        var quality = Math.round((indicator.x / (slider.width - indicator.width)) * 100)
+                        backend.get_quality(quality)
+                    }
                 }
-            }
 
-            Rectangle {
-                id: slider_cmp
-                x: 13
-                y: 39
-                width: 175
-                height: 5
-                color: "#2a2F2F"
-                radius: 2
-
-                Rectangle {
-                    id: slide_clip
-                    width: 10
-                    height: 10
-                    radius: 5
-                    color: "#FFFFFF"
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: (slider.currentValue - slider.minValue) / (slider.maxValue - slider.minValue) * (slider_cmp.width - width)
-
-                    MouseArea {
-                        id: drag_area
-                        anchors.fill: parent
-                        drag.target: parent
-                        drag.axis: Drag.XAxis
-                        drag.minimumX: 0
-                        drag.maximumX: slider_cmp.width - slide_clip.width
-
-                        onPositionChanged: {
-                            slider.currentValue = Math.round((slide_clip.x / (slider_cmp.width - slide_clip.width)) * (slider.maxValue - slider.minValue) + slider.minValue);
-                        }
-                        onReleased: backend.get_quality(slider.currentValue);
+                Behavior on x {
+                    NumberAnimation {
+                        duration: 100
+                        easing.type: Easing.InOutQuad
                     }
                 }
             }
-            Component.onCompleted: backend.get_quality(slider.currentValue);
+        }
+
+    }
+
+    Rectangle {
+        id: fps_selector
+        anchors.top: audio_setting.bottom
+        anchors.topMargin: 15
+        color: "#0e0f12"
+        anchors.left: parent.left
+        anchors.leftMargin: 17
+        anchors.right: parent.right
+        anchors.rightMargin: 17
+        width: parent.width -17-17
+        height: 50
+        //border.color: "#1c1e20"
+        Text {
+            id: fps_text
+            text: "FPS"
+            anchors.left:parent.left
+            anchors.top: parent.top
+            anchors.leftMargin: 15
+            anchors.topMargin: 15
+            font.pointSize: 12
+            color: "#FFFFFF"
+        }
+        Rectangle {
+            id: fps_24_30_60
+            anchors.left: fps_text.right
+            width: 60+60+60
+            anchors.leftMargin: 15
+            color: "#0e0f12"
+            anchors.top: parent.top
+            height: 50
+            border.color: "#1c1e20"
+            radius: 10
+            property int offx : 0
+            Rectangle {
+                id: mover
+                width: 60
+                height: 50
+                color: "#4f46d8"
+                radius: 10
+                x: fps_24_30_60.offx
+                Behavior on x {
+                    NumberAnimation {
+                        duration: 300
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+            }
+            Rectangle {
+                id: fps_24
+                anchors.left:parent.left
+                height: 50
+                width: 60
+                color: "transparent"
+                radius: 10
+                Text {
+                    id: fps_24_text
+                    text: "24"
+                    anchors.centerIn: parent
+                    color:"#FFFFFF"
+                    font.pointSize: 12
+                }
+                MouseArea {
+                    id: fps_24_click
+                    anchors.fill: parent
+                    onClicked: fps_24_30_60.offx=0
+                }
+            }
+            Rectangle {
+                id: fps_30
+                anchors.left: fps_24.right
+                height: 50
+                width: 60
+                color: "transparent"
+                radius: 10
+                Text {
+                    id: fps_30_text
+                    text: "30"
+                    anchors.centerIn: parent
+                    color:"#FFFFFF"
+                    font.pointSize: 12
+                }
+                MouseArea {
+                    id: fps_30_click
+                    anchors.fill: parent
+                    onClicked: fps_24_30_60.offx=60
+                }
+            }
+            Rectangle {
+                id: fps_60
+                anchors.left:fps_30.right
+                height: 50
+                width: 60
+                color: "transparent"
+                radius: 10
+                Text {
+                    id: fps_60_text
+                    text: "60"
+                    anchors.centerIn: parent
+                    color:"#FFFFFF"
+                    font.pointSize: 12
+                }
+                MouseArea {
+                    id: fps_60_click
+                    anchors.fill: parent
+                    onClicked: fps_24_30_60.offx=120
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        id: select_full_or_area
+        property bool full_state: true
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: 80
+        color:"transparent"
+        height: 50
+        Rectangle {
+            id: fullscreen
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.leftMargin: 17
+            color: select_full_or_area.full_state? "#4f46d8": "#121516"
+            width: 170
+            height: 50
+            radius: 30
+            Text {
+                id: fullscreen_text
+                anchors.centerIn: parent
+                text: qsTr("Fullscreen")
+                color: "#FFFFFF"
+                font.pointSize: 12
+            }
+            MouseArea {
+                id:select_fullscreen
+                anchors.fill: parent
+                onClicked: select_full_or_area.full_state=true
+            }
+
+            border.color: "#1c1e20"
+            Behavior on color {
+                ColorAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
         }
 
         Rectangle {
-            id : start_recording
-            x: 31
-            y: 356
-            width: 100
-            height: 30
-            color: "#2a2a2a"
+            id: select_area
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.rightMargin: 17
+            color: !select_full_or_area.full_state ? "#4f46d8" : "#121516"
+            width: 170
+            height: 50
+            radius: 30
             Text {
+                id: selcet_area_text
                 anchors.centerIn: parent
-                text: "Start recording"
+                text: qsTr("Select Area")
                 color: "#FFFFFF"
-
+                font.pointSize: 12
             }
-
             MouseArea {
-                id: mouseArea_start_recording
+                id : select_select_area
                 anchors.fill: parent
-                onClicked: backend.start_record()
+                onClicked: select_full_or_area.full_state=false
             }
-            radius: 20
+
+            border.color: "#1c1e20"
+            Behavior on color {
+                ColorAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        id: output_path
+        anchors.top: select_full_or_area.bottom
+        anchors.left: parent.left
+        anchors.topMargin: 15
+        anchors.leftMargin: 17
+        color: "#0e0f12"
+        width: 300
+        height: 50
+        radius: 10
+        border.color: "#1c1e20"
+        Text {
+            id: path
+            text: "C:/Users/LENOVO/Videos/out.mp4"
+            font.pointSize: 12
+            color: "#FFFFFF"
+            anchors.left: parent.left
+            anchors.leftMargin: 15
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
+    Rectangle {
+        id: browse
+        anchors.top:select_full_or_area.bottom
+        anchors.right: parent.right
+        anchors.rightMargin: 17
+        anchors.left: output_path.right
+        anchors.leftMargin: 15
+        anchors.topMargin: 15
+        color: "#121516"
+        height: 50
+        width: 50
+        border.color: "#1c1e20"
+        radius: 10
+        Text {
+            id: browse_text
+            text: "..."
+            color: "#FFFFFF"
+            anchors.centerIn: parent
+            font.pointSize: 12
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                saveDialog.open()
+            }
+        }
+        FileDialog {
+            id: saveDialog
+            title: "Choose file to save"
+            fileMode: FileDialog.SaveFile
+            nameFilters: ["MP4 Files (*.mp4)"]
+            defaultSuffix: "mp4"
+            onAccepted: {
+                path.text = saveDialog.file.toString().replace("file:///", "")
+                backend.set_customlocation(path.text)
+            }
+        }
+    }
+
+    Rectangle {
+        id: audio_setting
+        anchors.top: output_path.bottom
+        color: "#0e0f12"
+        anchors.left: parent.left
+        anchors.leftMargin: 17
+        anchors.right: parent.right
+        anchors.rightMargin: 17
+        height: 50
+        radius: 10
+        anchors.topMargin: 15
+
+        Text {
+            id: audio_text
+            text: "Audio"
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.leftMargin: 15
+            anchors.topMargin: 15
+            font.pointSize: 12
+            color: "#FFFFFF"
         }
 
         Rectangle {
-            id : pause
-            x: 143
-            y: 356
-            width: 100
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                anchors.centerIn: parent
-                text: "pause"
-                color: "#FFFFFF"
+            id: audio_bool
+            width: 80
+            height: 50
+            anchors.left: audio_text.right
+            anchors.leftMargin: 15
+            anchors.top: parent.top
+            radius: 30
+            color: "#0e0f12"
+            border.color: "#1c1e20"
+            property bool audioEnabled: true
 
+            Text {
+                id: audio_off
+                visible: !audio_bool.audioEnabled
+                anchors.right: parent.right
+                anchors.rightMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+                text: "off"
+                font.pointSize: 12
+                color: "#FFFFFF"
+            }
+
+            Text {
+                id: audio_on
+                visible: audio_bool.audioEnabled
+                anchors.left: parent.left
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+                text: "on"
+                font.pointSize: 12
+                color: "#FFFFFF"
+            }
+
+            Rectangle {
+                id: audio_trigger
+                width: 30
+                height: 30
+                radius: 80
+                anchors.verticalCenter: parent.verticalCenter
+                property real onX: parent.width - width - 10
+                property real offX: 10
+                x: audio_bool.audioEnabled ? onX : offX
+                color: audio_bool.audioEnabled ? "#4f46d8" : "#1c1e20"
+
+                Behavior on x {
+                    NumberAnimation {
+                        duration: 300
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 300
+                        easing.type: Easing.InOutQuad
+                    }
+                }
             }
 
             MouseArea {
-                id: mouseArea_pause
+                id: audio_xor
                 anchors.fill: parent
-                onClicked: backend.pause_record()
+                onClicked: {
+                    backend.set_audio(!audio_bool.audioEnabled);
+                    audio_bool.audioEnabled = !audio_bool.audioEnabled
+                }
             }
-            radius: 20
         }
-
-        Rectangle {
-            id : resume
-            x: 253
-            y: 259
-            width: 100
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                anchors.centerIn: parent
-                text: "resume"
-                color: "#FFFFFF"
-
-            }
-
-            MouseArea {
-                id: mouseArea_resume
-                anchors.fill: parent
-                onClicked: backend.resume_record()
-            }
-            radius: 20
-        }
-
-        Rectangle {
-            id : stop
-            x: 268
-            y: 356
-            width: 100
-            height: 30
-            color: "#2a2a2a"
-            Text {
-                anchors.centerIn: parent
-                text: "stop"
-                color: "#FFFFFF"
-
-            }
-
-            MouseArea {
-                id: mouseArea_stop
-                anchors.fill: parent
-                onClicked: backend.stop_record()
-            }
-            radius: 20
-        }
-
         Rectangle {
             id: audio_devices
-            x: 123
-            y: 149
-            width: 160
-            height: 30
-            color: "#2a2a2a"
-
+            anchors.left: audio_bool.right
+            anchors.leftMargin: 15
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 50
+            color: "#0e0f12"
+            border.color: "#1c1e20"
+            radius: 10
             property bool listVisible: false
-
+            property var audioDevices: backend.getAudioDevices()
+            visible : audio_bool.audioEnabled
             Rectangle {
                 id: dropdown
                 width: parent.width
+                anchors.verticalCenter: parent.verticalCenter
                 height: 30
-                color: "#3a3a3a"
+                color: "transparent"
 
                 Text {
                     id: selectedText
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
-                    anchors.leftMargin: 5
+                    anchors.leftMargin: 15
                     text: "Select..."
                     color: "white"
+                    font.pointSize: 12
                 }
-
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: listView.visible = !listView.visible
+                    onClicked:{
+
+                        audio_devices.listVisible = !audio_devices.listVisible
+                    }
                 }
             }
-            property var audioDevices: backend.getAudioDevices()
-            ListView {
-                id: listView
-                width: 160
-                height: 100
-                y: dropdown.height
-                visible: false
+
+            Rectangle {
+                id: list_view_container
+                width: audio_devices.width
+                height: 80
+                y: audio_devices.height
+                visible: audio_devices.listVisible
                 clip: true
-
-                model:audioDevices
-
-                delegate: Rectangle {
-                    width: listView.width
-                    height: 30
-                    color: "#000000"
-
-                    Row {
-                        spacing: 5
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 5
-
-                        Rectangle {
-                            width: 20
-                            height: 20
-                            color: "#2a2a2a"
-                        }
-
+                radius:10
+                color:"transparent"
+                ListView {
+                    id: listView
+                    width: parent.width
+                    height: 80
+                    anchors.fill: parent
+                    clip: true
+                    model: backend.getAudioDevices()
+                    delegate: Rectangle {
+                        width: listView.width
+                        height: 40
+                        color: "#121516"
                         Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.leftMargin: 15
                             text: modelData
                             color: "#FFFFFF"
-                            font.pixelSize: 10
+                            font.pixelSize: 12
                         }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            selectedText.text = modelData;
-                            backend.set_audioDeviceName(modelData);
-                            listView.visible = false;
+                        Rectangle {
+                            anchors.top: parent.top
+                            height: 1
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            color: "#1c1e20"
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                selectedText.text = modelData
+                                backend.set_audioDeviceName(modelData)
+                                audio_devices.listVisible = false
+                            }
                         }
                     }
                 }
             }
-            Component.onCompleted: {
-                listView.model = backend.getAudioDevices()
+        }
+    }
+
+    Rectangle {
+        id: bottons
+        anchors.left: parent.left
+        anchors.leftMargin: 17
+        anchors.right: parent.right
+        anchors.rightMargin: 17
+        anchors.top: quality.bottom
+        anchors.topMargin: 15
+        height: 50
+        color: "transparent"
+        property bool started: false
+        Rectangle {
+            id: recording_id
+            height: 50
+            width: 200
+            radius: 30
+            color: !bottons.started ? "#44b653":"#f84d54"
+            //border.color: "#f76b71"
+            Text {
+                id: recording_status
+                anchors.centerIn: parent
+                text: !bottons.started ? qsTr("Start recording") : "Stop recording"
+                color: "#FFFFFF"
+                font.pointSize: 12
+            }
+            MouseArea {
+                id: record_space
+                anchors.fill: parent
+                onClicked: {
+                    bottons.started = !bottons.started
+                    if (bottons.started) {
+                        another_option.pause = true
+                    }
+                }
+            }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+        Rectangle {
+            id: another_option
+            height: 50
+            anchors.right: parent.right
+            width: 150
+            radius: 30
+            property bool pause: true
+            color: bottons.started ? (another_option.pause ? "#121516" : "#4f46d8") : "#121516"
+            border.color: "#1c1e20"
+            Text {
+                id: another_option_text
+                anchors.centerIn: parent
+                text: bottons.started ? (another_option.pause ? "Pause" : "Resume") : "Pause"
+                color: "#FFFFFF"
+                font.pointSize: 12
+            }
+            MouseArea {
+                id: pause_resume
+                anchors.fill: parent
+                onClicked: another_option.pause=!another_option.pause
+            }
+            opacity: bottons.started ? 1:0
+            visible: opacity>0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
             }
         }
 
