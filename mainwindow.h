@@ -9,6 +9,7 @@
 #include <QAudioDevice>
 #include <QVariant>
 #include <QVariantList>
+#include <QDebug>
 
 #include "screenrecorder.h"
 
@@ -16,6 +17,7 @@ class MainWindow : public QObject {
     Q_OBJECT
 public:
     explicit MainWindow(QObject* parent = nullptr);
+    ~MainWindow();
 
     Q_INVOKABLE void set_fullscreen();
     Q_INVOKABLE void set_customarea(int width, int height, int x_offset, int y_offset,int screen_number);
@@ -37,6 +39,14 @@ public:
 
     Q_INVOKABLE void get_fps(int fps);
     Q_INVOKABLE void get_quality(int quality);
+
+signals:
+    // Signal to emit log messages to QML
+    void logMessage(const QString &message);
+
+private:
+    // Setup logging
+    void setupLogging();
 
     //details
     RecordingWindowDetails curr;

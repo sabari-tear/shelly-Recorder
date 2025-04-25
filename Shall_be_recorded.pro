@@ -1,4 +1,4 @@
-QT += quick multimedia core widgets
+QT += quick multimedia core widgets svg
 
 SOURCES += \
         main.cpp \
