@@ -13,6 +13,36 @@ Window {
     maximumHeight: 550
     minimumWidth: 400
     maximumWidth: 400
+    
+    // Initialize default values on component load
+    Component.onCompleted: {
+        // Set default fullscreen mode
+        select_full_or_area.full_state = true
+        backend.set_fullscreen()
+        
+        // Set default path
+        backend.set_customlocation(path.text)
+        
+        // Set default fps to 24
+        fps_24_30_60.offx = 0
+        backend.get_fps(24)
+        
+        // Send default quality value to backend
+        backend.get_quality(50)
+        
+        // Send default audio state (off) to backend
+        backend.set_audio(0)
+    }
+
+    Loader {
+        id: areaSelector
+        anchors.fill: parent
+        active: false
+        source: "selectarea.qml"
+        onLoaded: {
+            item.visible = true
+        }
+    }
 
     Rectangle {
         id: quality
@@ -66,6 +96,8 @@ Window {
                     drag.maximumX: slider.width - indicator.width
                     onPositionChanged: {
                         slider.indi_x = indicator.x
+                    }
+                    onReleased: {
                         var quality = Math.round((indicator.x / (slider.width - indicator.width)) * 100)
                         backend.get_quality(quality)
                     }
@@ -146,7 +178,10 @@ Window {
                 MouseArea {
                     id: fps_24_click
                     anchors.fill: parent
-                    onClicked: fps_24_30_60.offx=0
+                    onClicked: {
+                        fps_24_30_60.offx = 0
+                        backend.get_fps(24)
+                    }
                 }
             }
             Rectangle {
@@ -166,7 +201,10 @@ Window {
                 MouseArea {
                     id: fps_30_click
                     anchors.fill: parent
-                    onClicked: fps_24_30_60.offx=60
+                    onClicked: {
+                        fps_24_30_60.offx = 60
+                        backend.get_fps(30)
+                    }
                 }
             }
             Rectangle {
@@ -186,7 +224,10 @@ Window {
                 MouseArea {
                     id: fps_60_click
                     anchors.fill: parent
-                    onClicked: fps_24_30_60.offx=120
+                    onClicked: {
+                        fps_24_30_60.offx = 120
+                        backend.get_fps(60)
+                    }
                 }
             }
         }
@@ -206,7 +247,7 @@ Window {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.leftMargin: 17
-            color: select_full_or_area.full_state? "#4f46d8": "#121516"
+            color: select_full_or_area.full_state ? "#4f46d8" : (fullscreen_mouse.containsMouse ? "#252729" : "#121516")
             width: 170
             height: 50
             radius: 30
@@ -218,9 +259,16 @@ Window {
                 font.pointSize: 12
             }
             MouseArea {
-                id:select_fullscreen
+                id: fullscreen_mouse
                 anchors.fill: parent
-                onClicked: select_full_or_area.full_state=true
+                hoverEnabled: true
+                onClicked: {
+                    select_full_or_area.full_state = true
+                    backend.set_fullscreen()
+                    if (areaSelector.active) {
+                        areaSelector.active = false
+                    }
+                }
             }
 
             border.color: "#1c1e20"
@@ -237,7 +285,7 @@ Window {
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.rightMargin: 17
-            color: !select_full_or_area.full_state ? "#4f46d8" : "#121516"
+            color: !select_full_or_area.full_state ? "#4f46d8" : (select_area_mouse.containsMouse ? "#252729" : "#121516")
             width: 170
             height: 50
             radius: 30
@@ -249,9 +297,13 @@ Window {
                 font.pointSize: 12
             }
             MouseArea {
-                id : select_select_area
+                id: select_area_mouse
                 anchors.fill: parent
-                onClicked: select_full_or_area.full_state=false
+                hoverEnabled: true
+                onClicked: {
+                    select_full_or_area.full_state = false
+                    areaSelector.active = true
+                }
             }
 
             border.color: "#1c1e20"
@@ -275,6 +327,8 @@ Window {
         height: 50
         radius: 10
         border.color: "#1c1e20"
+        clip: true
+        
         Text {
             id: path
             text: "C:/Users/LENOVO/Videos/out.mp4"
@@ -282,7 +336,11 @@ Window {
             color: "#FFFFFF"
             anchors.left: parent.left
             anchors.leftMargin: 15
+            anchors.right: parent.right
+            anchors.rightMargin: 15
             anchors.verticalCenter: parent.verticalCenter
+            elide: Text.ElideMiddle
+            horizontalAlignment: Text.AlignLeft
         }
     }
 
@@ -294,11 +352,19 @@ Window {
         anchors.left: output_path.right
         anchors.leftMargin: 15
         anchors.topMargin: 15
-        color: "#121516"
+        color: saveDialog.visible ? "#4f46d8" : (browse_mouse.containsMouse ? "#252729" : "#121516")
         height: 50
         width: 50
         border.color: "#1c1e20"
         radius: 10
+        
+        Behavior on color {
+            ColorAnimation {
+                duration: 300
+                easing.type: Easing.InOutQuad
+            }
+        }
+        
         Text {
             id: browse_text
             text: "..."
@@ -307,7 +373,9 @@ Window {
             font.pointSize: 12
         }
         MouseArea {
+            id: browse_mouse
             anchors.fill: parent
+            hoverEnabled: true
             onClicked: {
                 saveDialog.open()
             }
@@ -358,7 +426,7 @@ Window {
             radius: 30
             color: "#0e0f12"
             border.color: "#1c1e20"
-            property bool audioEnabled: true
+            property bool audioEnabled: false
 
             Text {
                 id: audio_off
@@ -413,7 +481,11 @@ Window {
                 anchors.fill: parent
                 onClicked: {
                     backend.set_audio(!audio_bool.audioEnabled);
-                    audio_bool.audioEnabled = !audio_bool.audioEnabled
+                    audio_bool.audioEnabled = !audio_bool.audioEnabled;
+                    // Reset dropdown visibility when toggling audio
+                    if (audio_bool.audioEnabled) {
+                        audio_devices.listVisible = false;
+                    }
                 }
             }
         }
@@ -429,7 +501,25 @@ Window {
             radius: 10
             property bool listVisible: false
             property var audioDevices: backend.getAudioDevices()
+            property string lastSelectedDevice: "Select..."
             visible : audio_bool.audioEnabled
+            
+            Behavior on visible {
+                NumberAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            
+            opacity: audio_bool.audioEnabled ? 1 : 0
+            
             Rectangle {
                 id: dropdown
                 width: parent.width
@@ -442,9 +532,13 @@ Window {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 15
-                    text: "Select..."
+                    anchors.right: parent.right
+                    anchors.rightMargin: 15
+                    text: audio_devices.lastSelectedDevice
                     color: "white"
                     font.pointSize: 12
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
                 }
                 MouseArea {
                     anchors.fill: parent
@@ -494,6 +588,7 @@ Window {
                             anchors.fill: parent
                             onClicked: {
                                 selectedText.text = modelData
+                                audio_devices.lastSelectedDevice = modelData
                                 backend.set_audioDeviceName(modelData)
                                 audio_devices.listVisible = false
                             }
@@ -553,7 +648,9 @@ Window {
             width: 150
             radius: 30
             property bool pause: true
-            color: bottons.started ? (another_option.pause ? "#121516" : "#4f46d8") : "#121516"
+            color: bottons.started ? (another_option.pause ? 
+                (pause_resume.containsMouse ? "#252729" : "#121516") : 
+                "#4f46d8") : "#121516"
             border.color: "#1c1e20"
             Text {
                 id: another_option_text
@@ -565,6 +662,7 @@ Window {
             MouseArea {
                 id: pause_resume
                 anchors.fill: parent
+                hoverEnabled: true
                 onClicked: another_option.pause=!another_option.pause
             }
             opacity: bottons.started ? 1:0
