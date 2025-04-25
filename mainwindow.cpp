@@ -4,10 +4,10 @@
 MainWindow::MainWindow(QObject* parent) : QObject(parent) {}
 
 void MainWindow::set_fullscreen() {
-    QScreen* scr = QGuiApplication::primaryScreen();
-    QRect geo = scr->geometry();
-    curr.width = geo.width();
-    curr.height = geo.height();
+    // QScreen* scr = QGuiApplication::primaryScreen();
+    // QRect geo = scr->availableVirtualGeometry();
+    curr.width = 1920;
+    curr.height = 1080;
     curr.offset_x=0;
     curr.offset_y=0;
     curr.screen_number=0;
@@ -87,7 +87,7 @@ void MainWindow::get_quality(int quality)
 }
 void MainWindow::start_record() {
     try {
-        recorder=new Screenrecorder(curr, curr_details, output, audiodevice_name);
+        recorder=make_unique<Screenrecorder>(curr, curr_details, output, audiodevice_name);
         qDebug()<<"Built Screen recorder";
         auto record_thread=std::thread{[&](){
                 try {
@@ -98,7 +98,30 @@ void MainWindow::start_record() {
                     qDebug()<<"Caught exception:"<<e.what();
                     throw;
                 }
+                recorder.reset();
+                cv.notify_one();
         }};
+        record_thread.detach();
+    }
+    catch (const exception &e) {
+        qDebug()<<"Caught exception at start_record:"<<e.what();
+        throw;
     }
 }
 
+void MainWindow::pause_record() {
+    recorder->pauseRecording();
+}
+
+void MainWindow::resume_record() {
+    recorder->resumeRecording();
+}
+
+void MainWindow::stop_record() {
+    recorder->stopRecording();
+    auto waiting_thread =std::thread{[&]() {
+            unique_lock ul{m};
+            cv.wait(ul,[this](){return !recorder; });
+    }};
+    waiting_thread.detach();
+}

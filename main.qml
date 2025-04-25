@@ -407,7 +407,7 @@ Window {
             MouseArea {
                 id: mouseArea_pause
                 anchors.fill: parent
-                //onClicked:
+                onClicked: backend.pause_record()
             }
             radius: 20
         }
@@ -429,7 +429,7 @@ Window {
             MouseArea {
                 id: mouseArea_resume
                 anchors.fill: parent
-                //onClicked:
+                onClicked: backend.resume_record()
             }
             radius: 20
         }
@@ -451,7 +451,7 @@ Window {
             MouseArea {
                 id: mouseArea_stop
                 anchors.fill: parent
-                //onClicked:
+                onClicked: backend.stop_record()
             }
             radius: 20
         }

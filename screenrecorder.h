@@ -47,12 +47,13 @@ class Screenrecorder
 {
 public:
     Screenrecorder(RecordingWindowDetails& wd, VideoDetails& vd, string& outFilePath, string& audioDevice);
+    ~Screenrecorder();
+
     RecordingWindowDetails wd;
     VideoDetails vd;
     string outFilePath;
     string audioDevice;
 
-    ~Screenrecorder();
     void start_record();
     void stop_record();
     void pause_record();
@@ -181,7 +182,24 @@ public:
     void initConvertedSamples(uint8_t ***converted_input_samples, AVCodecContext *output_codec_context, int frame_size);
     //
 
+    //
     void add_samples_to_fifo(uint8_t **converted_input_samples, const int frame_size);
+    //
+
+    //
+    void stopRecording();
+    //
+
+    //
+    void resumeAudio();
+    //
+
+    //
+    string statusToString();
+    //
+
+    void pauseRecording();
+    void resumeRecording();
 };
 
 #endif // SCREENRECORDER_H

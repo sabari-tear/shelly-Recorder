@@ -24,6 +24,9 @@ public:
 
     //Q_INVOKABLE void collect_data();
     Q_INVOKABLE void start_record();
+    Q_INVOKABLE void pause_record();
+    Q_INVOKABLE void resume_record();
+    Q_INVOKABLE void stop_record();
 
 
     Q_INVOKABLE QVariantList getAudioDevices();
@@ -41,7 +44,10 @@ public:
     string output;
     bool audio;
     string audiodevice_name;
-    Screenrecorder* recorder;
+    unique_ptr<Screenrecorder> recorder;
+
+    mutex m;
+    condition_variable cv;
 };
 
 #endif // MAINWINDOW_H

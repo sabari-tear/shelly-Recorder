@@ -1,5 +1,6 @@
 #include "screenrecorder.h"
 #include <QDebug>
+
 void Screenrecorder::init_devicesEncodec()
 {
     //to get all the input devices and register it to the internal list in FFmpeg
@@ -578,7 +579,6 @@ void Screenrecorder::add_samples_to_fifo(uint8_t **converted_input_samples, cons
     }
 }
 
-
 void Screenrecorder::acquireAudio() {
     int ret;
     AVPacket *inPacket, *outPacket;
@@ -748,6 +748,58 @@ void Screenrecorder::acquireAudio() {
     qDebug()<<"ended the aqcuire AUDIO func";
 }
 
+void Screenrecorder::resumeAudio() {
+    AudioInputFormat = av_find_input_format("dshow");
+    int value =avformat_open_input(&FormatContextAudio, audioDevice.c_str(), AudioInputFormat, &AudioOptions);
+    if (value!=0) {
+        throw runtime_error{"opening input device error"};
+    }
+
+    if (avformat_find_stream_info(FormatContextAudio, NULL) < 0) {
+        throw runtime_error("Couldn't find audio stream information.");
+    }
+
+    int StreamsNumber = (int)FormatContextAudio->nb_streams;
+    for (int i = 0; i < StreamsNumber; i++) {
+        if (FormatContextAudio->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            ado_stream_index = i;
+            // SAVE AUDIO STREAM FROM AUDIO CONTEXT
+            audio_output_st = FormatContextAudio->streams[i];
+            break;
+        }
+    }
+
+    if (ado_stream_index == -1 || ado_stream_index >= StreamsNumber) {
+        throw runtime_error("Didn't find a audio stream.");
+    }
+}
+
+string Screenrecorder::statusToString() {
+    switch (status) {
+    case RecordingStatus::paused:
+        return "Pause";
+    case RecordingStatus::recording:
+        return "Recording";
+    case RecordingStatus::stopped:
+        return "Stopped";
+    default:
+        return "Undefined Status";
+    }
+}
+
+void Screenrecorder::stopRecording() {
+    qDebug()<<"stopping the recording process";
+
+    lock_guard<mutex> lg(status_lock);
+    if (status==RecordingStatus::recording || status==RecordingStatus::paused)
+        if (status==RecordingStatus::paused) {
+            if (vd.audio)
+                resumeAudio();
+        }
+    status=RecordingStatus::stopped;
+    cv.notify_all();
+    qDebug()<<"status: "<< QString::fromStdString(statusToString());
+}
 
 void Screenrecorder::record()
 {
@@ -772,4 +824,57 @@ void Screenrecorder::record()
             })();
         });
     }
+
+    unique_lock<mutex> error_queue_ul{error_queue_m};
+    error_queue_cv.wait(error_queue_ul,[&]() {return (!error_queue.empty() || terminated_threads == (vd.audio ? 3 :2));});
+
+    if (!error_queue.empty()) {
+        this->stopRecording();
+        if(vd.audio) {
+            audioEnd();
+        }
+        string error_message=error_queue.front();
+        error_queue.pop();
+        while(!error_queue.empty()) {
+            error_message+=string{"\n"} +error_queue.front();
+            error_queue.pop();
+        }
+        throw runtime_error{error_message};
+    }
+}
+
+void Screenrecorder::pauseRecording() {
+    qDebug()<<"pausing";
+    lock_guard<mutex> lg(status_lock);
+    if (status==RecordingStatus::recording)
+        status=RecordingStatus::paused;
+    qDebug()<<"status: "<<QString::fromStdString(statusToString());
+}
+
+void Screenrecorder::resumeRecording() {
+    qDebug()<<"resuming";
+    lock_guard<mutex> lg(status_lock);
+    if (status==RecordingStatus::paused) {
+        if (vd.audio)
+            resumeAudio();
+        status=RecordingStatus::recording;
+        cv.notify_all();
+    }
+    qDebug()<<"status: "<<QString::fromStdString(statusToString());
+}
+
+Screenrecorder::~Screenrecorder() {
+    captureVideo_thread.get()->join();
+    eloborate_thread.get()->join();
+
+    if (vd.audio) {
+        captureAudio_thread.get()->join();
+        avformat_close_input(&FormatContextAudio);
+        avformat_free_context(FormatContextAudio);
+    }
+
+    av_write_trailer(avFmtCtxOut);
+    avformat_close_input(&avFmtCtx);
+    avio_close(avFmtCtxOut->pb);
+    qDebug()<<"Screen Recorder deallocated";
 }
