@@ -9,11 +9,13 @@ Window {
     width: 400
     height: 550
     color: "#0e0f12"
-    minimumHeight: 550
-    maximumHeight: 550
+    minimumHeight: 500
+    maximumHeight: 500
     minimumWidth: 400
     maximumWidth: 400
-    
+
+    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+
     // Initialize default values on component load
     Component.onCompleted: {
         // Set default fullscreen mode
@@ -41,6 +43,25 @@ Window {
         source: "selectarea.qml"
         onLoaded: {
             item.visible = true
+        }
+    }
+
+    Rectangle {
+        id: header
+        anchors.top: parent.top
+        anchors.topMargin: 15
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 50
+        color: "transparent"
+        Text {
+            id: app_name
+            text: "Shelly Recorder"
+            color:"#FFFFFF"
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 20
+            font.pointSize: 17
         }
     }
 
@@ -475,6 +496,7 @@ Window {
                     }
                 }
             }
+
 
             MouseArea {
                 id: audio_xor
