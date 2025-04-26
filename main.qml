@@ -711,6 +711,7 @@ Window {
                         if (bottons.started) {
                             another_option.pause = true
                         }
+                        backend.start_record()
                     }
                 }
                 Behavior on color {
@@ -742,7 +743,13 @@ Window {
                     id: pause_resume
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: another_option.pause=!another_option.pause
+                    onClicked:{
+                        another_option.pause=!another_option.pause
+                        if (another_option.pause)
+                            backend.pause_record()
+                        else
+                            backend.resume_record()
+                    }
                 }
                 opacity: bottons.started ? 1:0
                 visible: opacity>0
