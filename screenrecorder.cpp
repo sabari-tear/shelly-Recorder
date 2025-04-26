@@ -508,8 +508,20 @@ void Screenrecorder::getRawPackets(){
     }
     try {
         while (framesValue!=0) {
-            qDebug()<<"test";
-            throw runtime_error{"hehe"};
+            unique_lock<mutex> ul(status_lock);
+
+            if (status==RecordingStatus::paused)
+                qDebug()<<"Video Pause";
+
+            cv.wait(ul,[this]() { return status!=RecordingStatus::paused; });
+
+            if (status==RecordingStatus::stopped && (audio_end|| !vd.audio)) {
+                if (value>=0)
+                    framesValue--;
+            }
+
+            ul.unlock();
+
         }
     }
     catch (const std::exception &e) {
