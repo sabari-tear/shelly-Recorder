@@ -767,100 +767,100 @@ Window {
                 }
             }
         }
-        Rectangle {
-            id: log_text
-            anchors.top:bottons.bottom
-            anchors.topMargin: 15
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 17
-            anchors.rightMargin: 17
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 17
-            color:  "transparent"
-            border.color: "#1c1e20"
-            radius: 10
-            clip: true
-            
-            // Maintain a property for logs
-            property string logText: ""
-            
-            // Connect to backend log signals
-            Connections {
-                target: backend
-                function onLogMessage(message) {
-                    // Add new message to log
-                    log_text.logText += message + "\n";
-                    // Auto-scroll to bottom
-                    logArea.cursorPosition = logArea.length
-                    logArea.ensureVisible(logArea.cursorPosition)
-                }
-            }
-            
-            ScrollView {
-                id: logScrollView
-                anchors.fill: parent
-                anchors.margins: 10
-                clip: true
-                
-                ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
-                
-                TextArea {
-                    id: logArea
-                    width: parent.width
-                    height: parent.height
-                    text: log_text.logText
-                    color: "#CCCCCC"
-                    font.family: "Consolas"
-                    font.pixelSize: 12
-                    readOnly: true
-                    wrapMode: TextEdit.Wrap
-                    selectByMouse: true
-                    
-                    background: Rectangle {
-                        color: "#121516"
-                        radius: 5
-                    }
-                }
-            }
-            
-            // Clear button
-            Rectangle {
-                id: clearButton
-                width: 60
-                height: 24
-                radius: 4
-                color: clearBtnMouseArea.containsMouse ? "#4f46d8" : "#252729"
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: 8
-                z: 1
-                
-                Text {
-                    anchors.centerIn: parent
-                    text: "Clear"
-                    color: "white"
-                    font.pixelSize: 10
-                }
-                
-                MouseArea {
-                    id: clearBtnMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        log_text.logText = ""
-                    }
-                }
-                
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-            }
-        }
+        // Rectangle {
+        //     id: log_text
+        //     anchors.top:bottons.bottom
+        //     anchors.topMargin: 15
+        //     anchors.left: parent.left
+        //     anchors.right: parent.right
+        //     anchors.leftMargin: 17
+        //     anchors.rightMargin: 17
+        //     anchors.bottom: parent.bottom
+        //     anchors.bottomMargin: 17
+        //     color:  "transparent"
+        //     border.color: "#1c1e20"
+        //     radius: 10
+        //     clip: true
+
+        //     // Maintain a property for logs
+        //     property string logText: ""
+
+        //     // Connect to backend log signals
+        //     Connections {
+        //         target: backend
+        //         function onLogMessage(message) {
+        //             // Add new message to log
+        //             log_text.logText += message + "\n";
+        //             // Auto-scroll to bottom
+        //             logArea.cursorPosition = logArea.length
+        //             logArea.ensureVisible(logArea.cursorPosition)
+        //         }
+        //     }
+
+        //     ScrollView {
+        //         id: logScrollView
+        //         anchors.fill: parent
+        //         anchors.margins: 10
+        //         clip: true
+
+        //         ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        //         ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+
+        //         TextArea {
+        //             id: logArea
+        //             width: parent.width
+        //             height: parent.height
+        //             text: log_text.logText
+        //             color: "#CCCCCC"
+        //             font.family: "Consolas"
+        //             font.pixelSize: 12
+        //             readOnly: true
+        //             wrapMode: TextEdit.Wrap
+        //             selectByMouse: true
+
+        //             background: Rectangle {
+        //                 color: "#121516"
+        //                 radius: 5
+        //             }
+        //         }
+        //     }
+
+        //     // Clear button
+        //     Rectangle {
+        //         id: clearButton
+        //         width: 60
+        //         height: 24
+        //         radius: 4
+        //         color: clearBtnMouseArea.containsMouse ? "#4f46d8" : "#252729"
+        //         anchors.top: parent.top
+        //         anchors.right: parent.right
+        //         anchors.margins: 8
+        //         z: 1
+
+        //         Text {
+        //             anchors.centerIn: parent
+        //             text: "Clear"
+        //             color: "white"
+        //             font.pixelSize: 10
+        //         }
+
+        //         MouseArea {
+        //             id: clearBtnMouseArea
+        //             anchors.fill: parent
+        //             hoverEnabled: true
+        //             onClicked: {
+        //                 log_text.logText = ""
+        //             }
+        //         }
+
+        //         Behavior on color {
+        //             ColorAnimation {
+        //                 duration: 150
+        //                 easing.type: Easing.InOutQuad
+        //             }
+        //         }
+        //     }
+        //}
     }
 
 }
