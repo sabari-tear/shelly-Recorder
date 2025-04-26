@@ -522,6 +522,14 @@ void Screenrecorder::getRawPackets(){
 
             ul.unlock();
 
+            avRawPkt=av_packet_alloc();
+            value=av_read_frame(avFmtCtx,avRawPkt);
+
+            if (value>=0 && avRawPkt->size) {
+                unique_lock<mutex> avRawPkt_queue_ul{avRawPkt_queue_mutex};
+                avRawPkt_queue.push(avRawPkt);
+                avRawPkt_queue_ul.unlock();
+            }
         }
     }
     catch (const std::exception &e) {
