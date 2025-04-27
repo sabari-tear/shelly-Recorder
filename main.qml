@@ -579,7 +579,7 @@ Window {
                 border.color: "#1c1e20"
                 radius: 10
                 property bool listVisible: false
-                property var audioDevices: backend.getAudioDevices()
+                property var audioDevices: backend ? backend.getAudioDevices() : []
                 property string lastSelectedDevice: "Select..."
                 visible : audio_bool.audioEnabled
 
@@ -643,7 +643,7 @@ Window {
                         height: 80
                         anchors.fill: parent
                         clip: true
-                        model: backend.getAudioDevices()
+                        model: backend ? backend.getAudioDevices() : []
                         delegate: Rectangle {
                             width: listView.width
                             height: 40
