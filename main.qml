@@ -746,11 +746,12 @@ Window {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked:{
-                        another_option.pause=!another_option.pause
-                        if (another_option.pause)
+                        if (another_option.pause) {
                             backend.pause_record()
-                        else
+                        } else {
                             backend.resume_record()
+                        }
+                        another_option.pause = !another_option.pause
                     }
                 }
                 opacity: bottons.started ? 1:0

@@ -806,6 +806,9 @@ void Screenrecorder::record()
     audio_stop=false;
     gotFirstValidVideoPacket=false;
 
+    status = RecordingStatus::recording;
+    qDebug()<<"Starting recording with status: "<<QString::fromStdString(statusToString());
+    
     eloborate_thread = make_unique<thread> ([this]() {
         this->make_error_handler([this]() {
             this->decodeAndEncode();
