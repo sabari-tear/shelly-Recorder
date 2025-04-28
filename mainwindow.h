@@ -40,10 +40,6 @@ public:
     Q_INVOKABLE void get_fps(int fps);
     Q_INVOKABLE void get_quality(int quality);
 
-signals:
-    // Signal to emit log messages to QML
-    void logMessage(const QString &message);
-
 private:
     //details
     RecordingWindowDetails curr;
