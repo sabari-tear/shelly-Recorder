@@ -45,9 +45,6 @@ signals:
     void logMessage(const QString &message);
 
 private:
-    // Setup logging
-    void setupLogging();
-
     //details
     RecordingWindowDetails curr;
     VideoDetails curr_details;

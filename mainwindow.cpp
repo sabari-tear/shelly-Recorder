@@ -6,57 +6,14 @@
 // Global variable to track the MainWindow instance for logging
 static MainWindow* g_mainWindowInstance = nullptr;
 
-// Custom message handler to redirect qDebug output
-void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    // Format the message
-    QString formattedMessage;
-    switch (type) {
-        case QtDebugMsg:
-            formattedMessage = QString("Debug: %1").arg(msg);
-            break;
-        case QtInfoMsg:
-            formattedMessage = QString("Info: %1").arg(msg);
-            break;
-        case QtWarningMsg:
-            formattedMessage = QString("Warning: %1").arg(msg);
-            break;
-        case QtCriticalMsg:
-            formattedMessage = QString("Critical: %1").arg(msg);
-            break;
-        case QtFatalMsg:
-            formattedMessage = QString("Fatal: %1").arg(msg);
-            break;
-    }
-    
-    // Output to standard console
-    std::cout << formattedMessage.toStdString() << std::endl;
-    
-    // Emit signal if instance is available
-    if (g_mainWindowInstance) {
-        QMetaObject::invokeMethod(g_mainWindowInstance, "logMessage", Qt::QueuedConnection, 
-                                 Q_ARG(QString, formattedMessage));
-    }
-}
-
 MainWindow::MainWindow(QObject* parent) : QObject(parent) {
     // Register this instance for logging
     g_mainWindowInstance = this;
-    setupLogging();
 }
 
 MainWindow::~MainWindow() {
     // Clean up the global instance
-    if (g_mainWindowInstance == this) {
-        g_mainWindowInstance = nullptr;
-    }
-}
-
-void MainWindow::setupLogging() {
-    // Install the custom message handler
-    qInstallMessageHandler(customMessageHandler);
-    
-    // Log a startup message
-    qDebug() << "Application started, logging initialized";
+    g_mainWindowInstance = nullptr;
 }
 
 void MainWindow::set_fullscreen() {
