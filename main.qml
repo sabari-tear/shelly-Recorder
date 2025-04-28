@@ -7,7 +7,7 @@ import Qt.labs.platform
 Window {
     id: root
     width: 400
-    height: 550
+    height: 500
     color: "transparent"
     minimumHeight: 500
     maximumHeight: 500
