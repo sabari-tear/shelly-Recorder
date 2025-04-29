@@ -10,14 +10,15 @@
 
 extern "C" {
 #include "libavcodec/avcodec.h"
-#include "libavdevice/avdevice.h"
 #include "libavformat/avformat.h"
-#include "libavformat/avio.h"
 #include "libavutil/audio_fifo.h"
+#include "libswscale/swscale.h"
+
+#include "libavdevice/avdevice.h"
+#include "libavformat/avio.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libswresample/swresample.h"
-#include "libswscale/swscale.h"
 }
 
 

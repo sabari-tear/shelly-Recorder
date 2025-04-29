@@ -39,6 +39,12 @@ void Screenrecorder::init_videoSource(){
     av_dict_set(&avRawOptions,"video_size",(to_string(wd.width)+"x"+to_string(wd.height)).c_str(),0);
     av_dict_set(&avRawOptions,"framerate",to_string(vd.fps).c_str(),0);
     av_dict_set(&avRawOptions, "probesize", "30M", 0);
+    // Add cursor capture options
+    av_dict_set(&avRawOptions, "draw_mouse", "1", 0);
+    av_dict_set(&avRawOptions, "show_region", "0", 0);
+    av_dict_set(&avRawOptions, "follow_mouse", "0", 0);
+    av_dict_set(&avRawOptions, "capture_cursor", "1", 0);
+    av_dict_set(&avRawOptions, "capture_cursor_visible", "1", 0);
 
     AVInputFormat *avInputfmt=av_find_input_format("gdigrab");
     if(avInputfmt==nullptr){
