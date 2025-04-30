@@ -14,7 +14,7 @@ Window {
     minimumWidth: 400
     maximumWidth: 400
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
-
+    visible: true
     Component.onCompleted: {
         select_full_or_area.full_state = true
         backend.set_fullscreen()
@@ -710,8 +710,10 @@ Window {
                         bottons.started = !bottons.started
                         if (bottons.started) {
                             another_option.pause = true
+                            backend.start_record()
+                        } else {
+                            backend.stop_record()
                         }
-                        backend.start_record()
                     }
                 }
                 Behavior on color {
