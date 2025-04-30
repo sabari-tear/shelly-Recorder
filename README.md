@@ -1,11 +1,11 @@
 
-# Shelly Recorder
+## Shelly Recorder
 
 **Shelly Recorder** is a screen recording application built with **C++** and **QML** using **Qt 6**. It offers a clean interface with essential features for screen capturing.
 
 ---
 
-## Features
+### Features
 
 - **Recording Modes**: Fullscreen and custom area selection.
 - **Audio Capture**: Toggle system audio recording.
@@ -16,12 +16,12 @@
 
 ---
 
-### Prerequisites
+#### Prerequisites
 
 - **Qt 6**
 - **Qt Creator** IDE.
 
-### Running the Application
+#### Running the Application
 
 1. **Clone the Repository**:
    ```bash
