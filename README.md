@@ -20,13 +20,30 @@
 * Screen Recording
   - Fullscreen or custom area selection
   - Adjustable quality and FPS
+  - Support for multiple monitors
+  - Region selection with resizable window
 * Audio Recording
   - System audio capture
   - Multiple device support
-* Pause/Resume
-  - Seamless recording control
+  - Audio device selection
+  - Volume level monitoring
+* Recording Controls
+  - Pause/Resume functionality
+  - Stop and save options
+  - Recording timer display
+  - File format selection
 * Minimal Interface
   - Clean and intuitive design
+  - Dark/Light theme support
+  - Customizable hotkeys
+  - System tray integration
+
+## Requirements
+
+* Qt 6.2.0 or higher
+* FFmpeg 4.0 or higher
+* C++17 compatible compiler
+* CMake 3.16 or higher
 
 ## How To Use
 
@@ -34,10 +51,25 @@
 # Clone this repository
 $ git clone https://github.com/sabari-tear/shelly-Recorder.git
 
+# Install dependencies
+$ sudo apt-get install qt6-base-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev
+
 # Build the project
 $ qmake
 $ make
+
+# Run the application
+$ ./Shall_be_recorded
 ```
+
+## Configuration
+
+The application can be configured through the settings menu:
+* Video quality settings
+* Audio device selection
+* Output format preferences
+* Hotkey customization
+* Theme selection
 
 ## Download
 
