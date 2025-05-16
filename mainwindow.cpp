@@ -4,20 +4,9 @@
 #include <iostream>
 
 MainWindow::MainWindow(QObject* parent) : QObject(parent) {
-    connect(&m_durationTimer, &QTimer::timeout, this, &MainWindow::updateRecordingDuration);
 }
 
 MainWindow::~MainWindow() {
-    if (m_isRecording) {
-        stop_record();
-    }
-}
-
-void MainWindow::updateRecordingDuration() {
-    if (m_isRecording && !m_isPaused) {
-        m_recordingDuration++;
-        emit durationChanged(m_recordingDuration);
-    }
 }
 
 void MainWindow::set_fullscreen() {
@@ -108,116 +97,43 @@ void MainWindow::get_quality(int quality)
 
 void MainWindow::start_record() {
     try {
-        if (m_isRecording) {
-            m_lastError = "Recording is already in progress";
-            emit errorOccurred(m_lastError);
-            return;
-        }
-
-        recorder = make_unique<Screenrecorder>(curr, curr_details, output, audiodevice_name);
+        recorder=make_unique<Screenrecorder>(curr, curr_details, output, audiodevice_name);
         qDebug() << "Built Screen recorder";
         
-        m_isRecording = true;
-        m_isPaused = false;
-        m_recordingDuration = 0;
-        emit recordingStateChanged(true);
-        emit pauseStateChanged(false);
-        emit durationChanged(0);
-        
-        m_durationTimer.start(1000); // Update duration every second
-        
-        auto record_thread = std::thread{[this](){
-            try {
-                qDebug() << "Started recording..";
-                recorder->record();
-            }
-            catch (const std::exception &e) {
-                m_lastError = QString("Recording error: %1").arg(e.what());
-                emit errorOccurred(m_lastError);
-                m_isRecording = false;
-                emit recordingStateChanged(false);
-                m_durationTimer.stop();
-            }
-            recorder.reset();
-            cv.notify_one();
+        auto record_thread=std::thread{[this](){
+                try {
+                    qDebug() << "Started recording..";
+                    recorder->record();
+                }
+                catch (const std::exception &e) {
+                    qDebug() << "Caught exception:" << e.what();
+                    throw;
+                }
+                recorder.reset();
+                cv.notify_one();
         }};
         record_thread.detach();
     }
     catch (const exception &e) {
-        m_lastError = QString("Failed to start recording: %1").arg(e.what());
-        emit errorOccurred(m_lastError);
+        qDebug() << "Caught exception at start_record:" << e.what();
         throw;
     }
 }
 
 void MainWindow::pause_record() {
-    if (!m_isRecording || m_isPaused) return;
-    
-    try {
-        recorder->pauseRecording();
-        m_isPaused = true;
-        emit pauseStateChanged(true);
-    } catch (const std::exception &e) {
-        m_lastError = QString("Failed to pause recording: %1").arg(e.what());
-        emit errorOccurred(m_lastError);
-    }
+    recorder->pauseRecording();
 }
 
 void MainWindow::resume_record() {
-    if (!m_isRecording || !m_isPaused) return;
-    
-    try {
-        recorder->resumeRecording();
-        m_isPaused = false;
-        emit pauseStateChanged(false);
-    } catch (const std::exception &e) {
-        m_lastError = QString("Failed to resume recording: %1").arg(e.what());
-        emit errorOccurred(m_lastError);
-    }
+    recorder->resumeRecording();
 }
 
 void MainWindow::stop_record() {
-    if (!m_isRecording) return;
+    recorder->stopRecording();
     
-    try {
-        recorder->stopRecording();
-        m_isRecording = false;
-        m_isPaused = false;
-        m_durationTimer.stop();
-        emit recordingStateChanged(false);
-        emit pauseStateChanged(false);
-        
-        auto waiting_thread = std::thread{[this]() {
+    auto waiting_thread =std::thread{[this]() {
             unique_lock ul{m};
             cv.wait(ul,[this](){return !recorder; });
-        }};
-        waiting_thread.detach();
-    } catch (const std::exception &e) {
-        m_lastError = QString("Failed to stop recording: %1").arg(e.what());
-        emit errorOccurred(m_lastError);
-    }
-}
-
-void MainWindow::cancelRecording() {
-    if (!m_isRecording) return;
-    
-    try {
-        recorder->stopRecording();
-        m_isRecording = false;
-        m_isPaused = false;
-        m_recordingDuration = 0;
-        m_durationTimer.stop();
-        emit recordingStateChanged(false);
-        emit pauseStateChanged(false);
-        emit durationChanged(0);
-        
-        auto waiting_thread = std::thread{[this]() {
-            unique_lock ul{m};
-            cv.wait(ul,[this](){return !recorder; });
-        }};
-        waiting_thread.detach();
-    } catch (const std::exception &e) {
-        m_lastError = QString("Failed to cancel recording: %1").arg(e.what());
-        emit errorOccurred(m_lastError);
-    }
+    }};
+    waiting_thread.detach();
 }
