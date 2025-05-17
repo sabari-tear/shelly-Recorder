@@ -3,8 +3,6 @@
 
 #include <QObject>
 #include <QString>
-#include <QTimer>
-#include <QElapsedTimer>
 
 #include <QScreen>
 #include <QMediaDevices>
@@ -17,8 +15,6 @@
 
 class MainWindow : public QObject {
     Q_OBJECT
-    Q_PROPERTY(int recordingDuration READ getRecordingDuration NOTIFY recordingDurationChanged)
-    Q_PROPERTY(bool isRecording READ isRecording NOTIFY recordingStateChanged)
 public:
     explicit MainWindow(QObject* parent = nullptr);
     ~MainWindow();
@@ -44,18 +40,6 @@ public:
     Q_INVOKABLE void get_fps(int fps);
     Q_INVOKABLE void get_quality(int quality);
 
-    // New methods for recording status
-    int getRecordingDuration() const { return m_recordingDuration; }
-    bool isRecording() const { return m_isRecording; }
-    Q_INVOKABLE QString getRecordingStatus() const;
-
-signals:
-    void recordingDurationChanged();
-    void recordingStateChanged();
-
-private slots:
-    void updateRecordingDuration();
-
 private:
     //details
     RecordingWindowDetails curr;
@@ -67,12 +51,6 @@ private:
 
     mutex m;
     condition_variable cv;
-
-    // New members for recording duration tracking
-    QTimer m_durationTimer;
-    QElapsedTimer m_recordingTimer;
-    int m_recordingDuration;
-    bool m_isRecording;
 };
 
 #endif // MAINWINDOW_H
